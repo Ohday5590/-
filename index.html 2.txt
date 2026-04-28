@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ລະບົບ POS ສຸດລ້ຳ ຂອງ ໂອເດ - ເວີເຊັນພາສາລາວ</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700;900&display=swap');
+        
+        :root {
+            --primary: #000000; --success: #34a853; --danger: #ea4335; --booked: #ff69b4;
+            --bg: #f0f2f5; --card: #ffffff; --text: #202124; --header-bg: #ffffff;
+            --border: #ddd; --cart-bg: #f8f9fa; --search-bg: #ffffff;
+            --input-bg: #ffffff;
+            --bg-img: url(''); --bg-blur: 0px; --bg-brightness: 100%;
+        }
+
+        [data-theme="dark"] {
+            --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --header-bg: #2d2d2d;
+            --border: #444; --cart-bg: #2d2d2d; --search-bg: #3d3d3d;
+            --input-bg: #3d3d3d;
+        }
+
+        body { 
+            margin: 0; 
+            font-family: 'Kanit', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            overflow: hidden; 
+            transition: 0.3s; 
+            -webkit-tap-highlight-color: transparent; 
+            position: relative;
+        }
+
+        /* --- Passcode Screen Styles --- */
+        #lock-screen {
+            position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .user-profile { text-align: center; margin-bottom: 30px; }
+        .user-name { font-size: 24px; font-weight: bold; color: var(--text); margin-top: 10px; text-transform: uppercase; }
+        
+        .passcode-dots { display: flex; gap: 15px; margin-bottom: 40px; }
+        .dot { width: 15px; height: 15px; border: 2px solid var(--primary); border-radius: 4px; transition: 0.2s; }
+        .dot.active { background: var(--primary); transform: scale(1.2); }
+
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .num-btn { 
+            width: 70px; height: 70px; border-radius: 15px; border: 1px solid var(--border);
+            background: var(--card); color: var(--text); font-size: 24px; font-weight: bold;
+            cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center;
+        }
+        .num-btn:active { background: var(--primary); color: white; transform: scale(0.9); }
+        .num-btn.clear { color: var(--danger); }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: var(--bg-img);
+            background-size: cover;
+            background-position: center;
+            filter: blur(var(--bg-blur)) brightness(var(--bg-brightness));
+            z-index: -1;
+            transition: 0.3s;
+        }
+        
+        .screen { width: 100vw; height: 100vh; display: flex; flex-direction: column; padding-bottom: 40px; box-sizing: border-box; position: relative; }
+
+        .main-header { background: var(--header-bg); padding: 10px 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 10; border-bottom: 1px solid var(--border); }
+        .creator-name { font-size: 14px; color: var(--primary); font-weight: bold; }
+
+        #autosave-status { font-size: 12px; color: #34a853; margin-left: 10px; opacity: 0; transition: 0.5s; font-weight: normal; }
+
+        .nav-menu { 
+            display: flex; gap: 10px; padding: 10px 20px; background: var(--card); border-bottom: 1px solid var(--border); 
+            overflow-x: auto; scrollbar-width: none; z-index: 9;
+        }
+        .nav-menu::-webkit-scrollbar { display: none; }
+        .nav-item { 
+            padding: 8px 15px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); 
+            color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; white-space: nowrap; transition: 0.2s;
+        }
+        .nav-item:hover { background: var(--primary); color: white; }
+        .nav-item.active { background: var(--primary); color: white; } 
+        .btn-save-data { background: #4285f4; color: white; border: none; }
+
+        /* Modified Search Container */
+        .search-container { 
+            padding: 10px 20px; 
+            background: var(--header-bg); 
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .search-input { flex: 1; padding: 12px 20px; border-radius: 15px; border: 1px solid var(--border); background: var(--search-bg); color: var(--text); font-size: 16px; outline: none; box-sizing: border-box; }
+        .col-input { width: 80px; padding: 12px; border-radius: 15px; border: 1px solid var(--border); text-align: center; font-family: inherit; font-weight: bold; background: var(--card); color: var(--text); }
+
+        .table-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
+            gap: 15px; 
+            padding: 20px; 
+            overflow-y: auto; 
+            flex: 1; 
+            align-content: start;
+        }
+        
+        .table-btn { 
+            width: 100%; 
+            aspect-ratio: 1/1; 
+            border-radius: 20px; 
+            background: var(--card); 
+            border: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            transition: 0.3s; 
+            color: var(--text);
+            padding: 10px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .table-btn:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); border-color: var(--primary); }
+        .table-btn.active { background: var(--success) !important; color: white; border: none; }
+        .table-btn.booked { background: var(--booked) !important; color: white; border: none; }
+
+        /* FIXED POS LAYOUT */
+        .pos-layout { 
+            display: flex; 
+            flex: 1; 
+            overflow: hidden; 
+            height: calc(100vh - 180px); /* Adjust based on header/nav height */
+        }
+        .menu-container { 
+            flex: 7; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%;
+            overflow: hidden;
+        }
+        .menu-area { 
+            flex: 1; 
+            padding: 15px; 
+            display: grid; 
+            grid-template-columns: repeat(var(--menu-cols, auto-fill), minmax(110px, 1fr)); 
+            gap: 12px; 
+            overflow-y: auto; 
+            align-content: start; 
+            min-height: 200px;
+        }
+        .cart-area { 
+            flex: 3; 
+            background: var(--card); 
+            border-left: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            padding: 20px; 
+            min-width: 320px; 
+            height: 100%;
+            overflow: hidden;
+        }
+        #cart-list { flex: 1; overflow-y: auto; margin-bottom: 10px; }
+
+        @media (max-width: 850px) {
+            .pos-layout { flex-direction: column; overflow-y: auto; height: auto; }
+            .menu-container { flex: none; height: 50vh; border-bottom: 2px solid var(--border); }
+            .cart-area { flex: none; height: 50vh; min-width: 100%; border-left: none; padding: 15px; box-sizing: border-box; }
+            .menu-area { grid-template-columns: repeat(var(--menu-cols, 3), 1fr); }
+        }
+
+        .food-card { background: var(--card); border-radius: 15px; overflow: hidden; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid var(--border); transition: 0.3s; position: relative; min-height: 140px; }
+        .food-img { width: 100%; height: 80px; object-fit: cover; background: #333; }
+        .food-info { padding: 8px; text-align: center; }
+        .food-info b { font-size: 13px; display: block; height: 38px; overflow: hidden; line-height: 1.2; }
+        .food-info span { font-size: 12px; }
+        
+        .food-actions { position: absolute; top: 3px; right: 3px; display: flex; gap: 3px; z-index: 5; }
+        .action-btn { border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+        .del-food-btn { background: var(--danger); }
+        .edit-food-btn { background: #fbbc04; }
+
+        .cart-item { background: var(--cart-bg); border-radius: 15px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
+        .modal-window { background: var(--card); color: var(--text); width: 100%; max-width: 450px; padding: 30px; border-radius: 35px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
+        
+        .report-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .report-box { background: var(--bg); padding: 15px; border-radius: 20px; text-align: center; border: 1px solid var(--border); }
+        .report-box h4 { margin: 0 0 5px 0; font-size: 14px; color: #888; }
+        .report-box p { margin: 0; font-size: 20px; font-weight: 900; color: var(--success); }
+        .top-menu-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px dashed var(--border); }
+
+        #qr-auto-container { text-align: center; margin: 10px 0; }
+        #qr-auto-img { width: 180px; height: 180px; border-radius: 10px; border: 5px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+
+        .history-item { 
+            background: var(--bg); border-radius: 15px; padding: 15px; margin-bottom: 10px; border: 1px solid var(--border); 
+        }
+        .history-header { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px dashed var(--border); padding-bottom: 5px; margin-bottom: 5px; }
+        .history-total { font-size: 1.2rem; color: var(--success); font-weight: 900; }
+
+        .btn-back-settings {
+            position: absolute; top: 20px; left: 20px; width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 12px; border: 1px solid var(--border); background: var(--bg);
+            color: var(--text); cursor: pointer; font-size: 18px; transition: 0.2s; z-index: 10;
+        }
+        .btn-back-settings:hover { background: var(--primary); color: white; }
+
+        .settings-content h3 { margin: 20px 0 10px 0; font-size: 18px; color: var(--success); border-left: 4px solid var(--success); padding-left: 10px; }
+        .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+        
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        .btn-upload { background: #666; color: white; padding: 10px; border-radius: 10px; display: block; text-align: center; cursor: pointer; font-size: 14px; border: none; }
+
+        .pay-summary-box { background: var(--cart-bg); padding: 15px; border-radius: 20px; margin-bottom: 15px; text-align: center; border: 1px solid var(--border); }
+        .cash-input-wrapper { position: relative; display: flex; align-items: center; margin-bottom: 15px; }
+        .input-pay-main { width: 100%; padding: 15px clamp(70px, 10vw, 100px) 15px 20px; font-size: clamp(24px, 5vw, 40px); font-weight: bold; border-radius: 20px; border: 3px solid var(--primary); background: var(--bg); color: var(--text); text-align: right; outline: none; box-sizing: border-box; }
+        .cash-suffix { position: absolute; right: 20px; font-size: clamp(20px, 4vw, 35px); font-weight: bold; color: #888; pointer-events: none; }
+        
+        .change-box { background: #e8f5e9; padding: 20px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        [data-theme="dark"] .change-box { background: #1b3320; }
+        #change-display { font-size: clamp(20px, 4vw, 38px); font-weight: 900; color: var(--success); }
+
+        .main-footer { position: fixed; bottom: 0; width: 100%; background: #000; color: #888; text-align: center; padding: 8px 0; font-size: 13px; z-index: 100; border-top: 1px solid var(--primary); }
+
+        /* --- Print Styles --- */
+        #receipt-print { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #receipt-print, #receipt-print * { visibility: visible; }
+            #receipt-print { 
+                display: block; position: absolute; left: 0; top: 0; width: 80mm; padding: 4mm; 
+                color: #000; background: #fff; font-family: 'Kanit', sans-serif; font-size: 11px; 
+            }
+            .receipt-header { text-align: center; margin-bottom: 8px; }
+            .receipt-logo { width: 40px; height: 40px; object-fit: contain; margin-bottom: 4px; }
+            .receipt-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+            .receipt-table th { border-bottom: 1px solid #000; text-align: left; padding: 4px 2px; font-size: 10px; }
+            .receipt-table td { padding: 4px 2px; vertical-align: top; }
+            .receipt-line { border-top: 1px dashed #000; margin: 6px 0; }
+            .receipt-row { display: flex; justify-content: space-between; margin: 2px 0; }
+            .qr-payment { width: 120px; height: 120px; display: block; margin: 8px auto; object-fit: contain; }
+            .receipt-footer { text-align: center; margin-top: 10px; font-size: 10px; }
+        }
+
+        #thank-you-popup {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
+            background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            text-align: center; z-index: 2000; display: none; opacity: 0; transition: 0.3s;
+            color: #000; border: 2px solid var(--success);
+        }
+        #thank-you-popup.show { display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        /* Input Style for Password Change */
+        .pass-input {
+            width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border);
+            background: var(--bg); color: var(--text); font-size: 16px; margin-top: 5px;
+        }
+    </style>
+</head>
+<body onkeydown="handleKeyboard(event)">
+
+    <div id="lock-screen">
+        <div class="user-profile">
+            <div style="width: 80px; height: 80px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white; margin: 0 auto;">👤</div>
+            <div class="user-name">ohday sisomephone</div>
+            <p style="color: #888; font-size: 14px;">ກະລຸນາໃສ່ລະຫັດຜ່ານ 4 ຕົວ</p>
+        </div>
+        
+        <div class="passcode-dots" id="dots-container">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+
+        <div class="numpad">
+            <button class="num-btn" onclick="pressKey('1')">1</button>
+            <button class="num-btn" onclick="pressKey('2')">2</button>
+            <button class="num-btn" onclick="pressKey('3')">3</button>
+            <button class="num-btn" onclick="pressKey('4')">4</button>
+            <button class="num-btn" onclick="pressKey('5')">5</button>
+            <button class="num-btn" onclick="pressKey('6')">6</button>
+            <button class="num-btn" onclick="pressKey('7')">7</button>
+            <button class="num-btn" onclick="pressKey('8')">8</button>
+            <button class="num-btn" onclick="pressKey('9')">9</button>
+            <button class="num-btn clear" onclick="clearPass()">C</button>
+            <button class="num-btn" onclick="pressKey('0')">0</button>
+            <button class="num-btn" onclick="deleteLast()">⌫</button>
+        </div>
+    </div>
+
+    <div id="table-screen" class="screen" style="display:none;">
+        <header class="main-header">
+            <div><h2 style="margin:0;">🏠 ຜັງໂຕ໊ະໃນຮ້ານ <span id="autosave-status">● Auto Saved</span></h2><span class="creator-name">By ohday sisomephone</span></div>
+            <div style="display:flex; gap:15px; align-items: center;">
+                <button onclick="openSettings()" title="ຕັ້ງຄ່າ" style="font-size:24px; background:none; border:none; cursor:pointer; color:var(--text);">⚙️</button>
+                <button onclick="removeTable()" style="font-size:24px; background:none; border:none; cursor:pointer; color:var(--danger);">➖</button>
+                <button onclick="addTable()" style="font-size:24px; background:none; border:none; cursor:pointer; color:var(--success);">➕</button>
+            </div>
+        </header>
+
+        <div class="nav-menu">
+            <button class="nav-item btn-save-data" onclick="saveDataToLocal()">💾 Data Save (Ctrl+S)</button>
+            <button class="nav-item" onclick="openReport()">📊 Report</button>
+            <button class="nav-item" onclick="openHistory()">🧾 History</button>
+            <button class="nav-item" onclick="lockApp()" style="margin-left: auto;">🔒 Lock</button>
+        </div>
+
+        <div class="table-grid" id="table-grid"></div>
+    </div>
+
+    <div id="pos-screen" class="screen" style="display:none;">
+        <header class="main-header">
+            <button onclick="goHome()" style="padding:10px 15px; border-radius:12px; border:1px solid var(--border); background:var(--card); color:var(--text); cursor:pointer;">⬅ ກັບຄືນ (Esc)</button>
+            <h2 id="pos-title" style="margin:0;"></h2>
+            <div style="display:flex; gap:10px;">
+                <button onclick="openTransferModal()" style="padding:10px 15px; border-radius:12px; border:none; background:#673ab7; color:white; cursor:pointer; font-weight:bold;">🔄 ຍ້າຍໂຕ໊ະ</button>
+                <button onclick="toggleBooking()" id="booking-btn" style="padding:10px 15px; border-radius:12px; border:none; background:var(--booked); color:white; cursor:pointer; font-weight:bold;">💗 ຈອງໂຕ໊ະ</button>
+                <button onclick="openAddFood()" style="padding:10px 15px; border-radius:12px; border:none; background:var(--primary); color:white; cursor:pointer;">➕ ເເພີ່ມເມນູ</button>
+            </div>
+        </header>
+        <div class="nav-menu" id="pos-category-list"></div>
+
+        <div class="pos-layout">
+            <div class="menu-container">
+                <div class="search-container">
+                    <input type="text" id="food-search" class="search-input" placeholder="🔍 ຄົ້ນຫາເມນູອາຫານ (F1)..." oninput="renderMenu()">
+                    <input type="number" id="menu-cols-input" class="col-input" value="6" min="1" max="10" title="ປັບຖັນ" oninput="updateMenuCols(this.value)">
+                </div>
+                <div class="menu-area" id="menu-area"></div>
+            </div>
+            <div class="cart-area">
+                <h3 style="margin:0 0 15px 0;">🛒 ລາຍການສັ່ງຊື້</h3>
+                <div id="cart-list"></div>
+                <div style="padding:15px; background:rgba(26, 115, 232, 0.1); border-radius:20px; border:1px solid var(--primary); text-align:right; margin-top: auto;">
+                    <small>ລວມທັງໝົດ</small>
+                    <h1 id="total-display" style="margin:0; color:var(--primary); font-size: 24px;">0 ₭</h1>
+                </div>
+                <button onclick="openPay()" style="width:100%; padding:15px; border-radius:20px; border:none; background:var(--primary); color:white; font-size:1.2rem; cursor:pointer; font-weight:bold; margin-top:10px;">💳 ເເຊັກບິນ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="transfer-modal" class="modal-overlay">
+        <div class="modal-window">
+            <h2 style="text-align:center;">🔄 ຍ້າຍລາຍການໄປໂຕ໊ະອື່ນ</h2>
+            <p>ເລືອກໂຕ໊ະປາຍທາງ:</p>
+            <select id="transfer-select" style="width:100%; padding:15px; border-radius:15px; margin-bottom:20px; font-size:18px;"></select>
+            <button onclick="confirmTransfer()" style="width:100%; padding:15px; background:var(--success); color:white; border:none; border-radius:15px; font-weight:bold; cursor:pointer;">ຢືນຢັນການຍ້າຍ</button>
+            <button onclick="closeModals()" style="width:100%; padding:10px; background:none; border:none; color:#888; cursor:pointer; margin-top:10px;">ຍົກເລີກ</button>
+        </div>
+    </div>
+
+    <div id="report-modal" class="modal-overlay">
+        <div class="modal-window">
+            <h2 style="text-align:center;">📊 Dashboard Report</h2>
+            <div class="report-summary-grid">
+                <div class="report-box"><h4>ຍອດຂາຍມື້ນີ້</h4><p id="rpt-today">0 ₭</p></div>
+                <div class="report-box"><h4>ຍອດຂາຍທັງໝົດ</h4><p id="rpt-total">0 ₭</p></div>
+            </div>
+            <h3 style="color:var(--booked)">🔥 5 ເມນູຂາຍດີ (Top Menu)</h3>
+            <div id="rpt-top-menu" style="max-height: 250px; overflow-y: auto; margin-bottom:15px;"></div>
+            <button onclick="exportHistoryToExcel()" style="width:100%; padding:15px; background:var(--success); color:white; border:none; border-radius:15px; cursor:pointer; margin-bottom:10px; font-weight:bold;">📥 ດາວໂຫຼດລາຍງານ Excel</button>
+            <button onclick="closeModals()" style="width:100%; padding:15px; background:#555; color:white; border:none; border-radius:15px; cursor:pointer;">ປິດ (Esc)</button>
+        </div>
+    </div>
+
+    <div id="history-modal" class="modal-overlay">
+        <div class="modal-window" style="max-width: 600px;">
+            <h2 style="text-align:center;">🧾 History (ປະຫວັດການຂາຍ)</h2>
+            <div id="history-list" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;"></div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="clearHistory()" style="flex:1; padding:15px; background:var(--danger); color:white; border:none; border-radius:15px; cursor:pointer;">ລ້າງປະຫວັດ</button>
+                <button onclick="closeModals()" style="flex:1; padding:15px; background:#555; color:white; border:none; border-radius:15px; cursor:pointer;">ປິດ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pay-modal" class="modal-overlay"><div class="modal-window">
+        <h2 style="text-align:center; margin-bottom:15px;">🧾 ຊຳລະເງິນ</h2>
+        <div class="pay-summary-box">
+            <span style="color:#888;">ຍອດລວມທີ່ຕ້ອງຈ່າຍ</span>
+            <div style="color:var(--danger); font-size:32px; font-weight:bold;"><span id="pay-total-val">0</span> ₭</div>
+            <div id="qr-auto-container">
+                <img id="qr-auto-img" src="" alt="QR Payment">
+                <p style="font-size:12px; color:#888; margin-top:5px;">Scan to Pay (Amount Auto)</p>
+            </div>
+        </div>
+        <div class="cash-input-wrapper"><input type="number" id="pay-input" class="input-pay-main" placeholder="0" oninput="calcChange()"><span class="cash-suffix">,000</span></div>
+        <div class="change-box"><b>ເງິນທອນ:</b><span id="change-display">0 ₭</span></div>
+        <button id="confirm-pay-btn" onclick="finalizePay()" disabled style="width:100%; padding:20px; border-radius:20px; border:none; background:var(--success); color:white; font-size:1.5rem; font-weight:bold; opacity:0.5; cursor:pointer;">✅ ຢືນຢັນ (Enter)</button>
+        <button onclick="closeModals()" style="width:100%; padding:10px; border:none; background:none; color:#888; cursor:pointer; margin-top:10px;">ຍົກເລີກ (Esc)</button>
+    </div></div>
+
+    <div id="food-modal" class="modal-overlay"><div class="modal-window">
+        <h2 id="food-modal-title" style="margin-bottom:20px;">➕ ເພີ່ມເມນູອາຫານ</h2>
+        <input type="hidden" id="edit-food-id">
+        <input type="text" id="in-food-name" placeholder="ຊື່ລາຍການອາຫານ" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); box-sizing:border-box;">
+        <input type="number" id="in-food-price" placeholder="ລາຄາ (ກີບ)" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); box-sizing:border-box;">
+        <select id="in-food-category" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); box-sizing:border-box;">
+            <option value="ທັງໝົດ">ທັງໝົດ</option>
+            <option value="ອາຫານ">ອາຫານ</option>
+            <option value="ເຄື່ອງດື່ມ">ເຄື່ອງດື່ມ</option>
+            <option value="ຂອງຫວານ">ຂອງຫວານ</option>
+        </select>
+        <input type="hidden" id="in-food-img">
+        <label class="btn-upload" for="file-input" style="margin-bottom:15px;">📁 ເເລືອກຮູບອາຫານຈາກໃນເຄື່ອງ</label>
+        <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'food')">
+        <img id="food-img-preview" src="https://via.placeholder.com/150" style="width:100%; height:150px; object-fit:cover; border-radius:15px; margin-bottom:15px;">
+        <div style="display:flex; gap:10px; width:100%;">
+            <button id="btn-save-food" onclick="saveFood()" style="flex:2; padding:15px; background:var(--success); color:white; border:none; border-radius:15px; font-weight:bold; cursor:pointer;">✅ ບັນທຶກ</button>
+            <button onclick="closeModals()" style="flex:1; padding:15px; background:#555; color:white; border:none; border-radius:15px; cursor:pointer;">ຍົກເລີກ</button>
+        </div>
+    </div></div>
+
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-window" style="position: relative;">
+            <button onclick="closeModals()" class="btn-back-settings" title="ກັບຄືນ">⬅</button>
+            <div class="settings-content">
+                <h2 style="text-align: center; margin-bottom: 5px;">⚙️ ຕັ້ງຄ່າລະບົບ</h2>
+                <p style="text-align: center; color:#888; margin-bottom: 20px; font-size: 14px;">ປັບແຕ່ງການສະແດງຜົນ ແລະ ການພິມບິນ</p>
+                
+                <h3>🎨 ຮູບແບບການສະແດງຜົນ</h3>
+                <div class="settings-row">
+                    <span>Dark Mode (ໂໝດມືດ)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="darkmode-toggle" onchange="toggleTheme()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <h3>💾 ຄວາມປອດໄພຂໍ້ມູນ</h3>
+                <div class="settings-row">
+                    <span>Auto Save (1 ວິນາທີ)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="autosave-toggle" onchange="toggleAutoSave()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <h3>🏢 ຮ້ານ & ການພິມບິນ</h3>
+                <div class="settings-row"><span>ໂລໂກຮ້ານ (Logo)</span><label class="btn-upload" for="logo-file-input">📁 ຮູບ</label><input type="file" id="logo-file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'logo')"></div>
+                <div class="settings-row"><span>QR ຮັບເງິນ (Payment)</span><label class="btn-upload" for="qr-file-input">💳 ຮູບ</label><input type="file" id="qr-file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'qr')"></div>
+                
+                <h3>🪑 ການສະແດງຜົນໂຕ໊ະ</h3>
+                <div class="settings-row"><span>ຈຳນວນຖັນ</span><input type="range" id="set-cols" min="1" max="10" value="5" oninput="init()"></div>
+                <div class="settings-row"><span>ຂະໜາດຕົວເລກ</span><input type="range" id="set-size" min="40" max="150" value="60" oninput="init()"></div>
+                
+                <h3>🖼️ ພື້ນຫຼັງ (Background)</h3>
+                <div class="settings-row"><label class="btn-upload" for="bg-file-input" style="width:100%; background:#6b7280;">🌆 ເລືອກຮູບພື້ນຫຼັງ</label><input type="file" id="bg-file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'bg')"></div>
+                <div class="settings-row"><span>ຄວາມເບີ (Blur)</span><input type="range" id="set-blur" min="0" max="20" value="0" oninput="applyBgSettings()"></div>
+                <div class="settings-row"><span>ຄວາມສະຫວ່າງ</span><input type="range" id="set-bright" min="0" max="150" value="100" oninput="applyBgSettings()"></div>
+                
+                <h3>🔒 ປ່ຽນລະຫັດຜ່ານ</h3>
+                <div style="background: var(--bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border);">
+                    <div style="margin-bottom: 10px;">
+                        <label style="font-size: 13px;">ລະຫັດເກົ່າ:</label>
+                        <input type="password" id="old-pass-input" class="pass-input" placeholder="****" maxlength="4">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 13px;">ລະຫັດໃໝ່ (4 ຕົວເລກ):</label>
+                        <input type="password" id="new-pass-input" class="pass-input" placeholder="****" maxlength="4">
+                    </div>
+                    <button onclick="changePasscode()" style="width:100%; padding:10px; background:var(--primary); color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">ຢືນຢັນການປ່ຽນ</button>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button onclick="resetBackground()" style="flex:1; padding:12px; background:var(--danger); color:white; border:none; border-radius:15px; cursor:pointer;">ລ້າງພື້ນຫຼັງ</button>
+                    <button onclick="closeModals()" style="flex:1; padding:12px; background:var(--success); color:white; border:none; border-radius:15px; cursor:pointer;">ຕົກລົງ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="thank-you-popup">✅<h2>ຊຳລະເງິນສຳເລັດ</h2><p>ຂອບໃຈທີ່ອຸດໜູນ</p></div>
+    <div id="receipt-print"></div>
+    <footer class="main-footer">© 2026 ພັດທະນາໂດຍ: ohday sisomephone</footer>
+
+    <script>
+        // --- Passcode Logic ---
+        let currentPass = "";
+        let correctPass = "0000"; 
+
+        function pressKey(num) {
+            if (currentPass.length < 4) {
+                currentPass += num;
+                updateDots();
+                if (currentPass.length === 4) {
+                    setTimeout(checkPass, 200);
+                }
+            }
+        }
+
+        function updateDots() {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                if (index < currentPass.length) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        }
+
+        function deleteLast() {
+            currentPass = currentPass.slice(0, -1);
+            updateDots();
+        }
+
+        function clearPass() {
+            currentPass = "";
+            updateDots();
+        }
+
+        function checkPass() {
+            if (currentPass === correctPass) {
+                document.getElementById('lock-screen').style.display = 'none';
+                document.getElementById('table-screen').style.display = 'flex';
+                currentPass = "";
+                updateDots();
+            } else {
+                alert("ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ!");
+                clearPass();
+            }
+        }
+
+        function changePasscode() {
+            const oldInput = document.getElementById('old-pass-input').value;
+            const newInput = document.getElementById('new-pass-input').value;
+
+            if (oldInput !== correctPass) {
+                alert("❌ ລະຫັດຜ່ານເກົ່າບໍ່ຖືກຕ້ອງ!");
+                return;
+            }
+
+            if (newInput.length !== 4 || isNaN(newInput)) {
+                alert("❌ ລະຫັດໃໝ່ຕ້ອງເປັນຕົວເລກ 4 ຕົວ!");
+                return;
+            }
+
+            correctPass = newInput;
+            alert("✅ ປ່ຽນລະຫັດຜ່ານສຳເລັດແລ້ວ!");
+            document.getElementById('old-pass-input').value = "";
+            document.getElementById('new-pass-input').value = "";
+            saveDataToLocal(true);
+        }
+
+        function lockApp() {
+            document.getElementById('lock-screen').style.display = 'flex';
+            document.getElementById('table-screen').style.display = 'none';
+            document.getElementById('pos-screen').style.display = 'none';
+            clearPass();
+        }
+
+        // --- Original System Logic ---
+        let tables = {}; let tableBooked = {}; let activeTbl = null; let tableCount = 12;
+        let isAutoSaveEnabled = true;
+        let saleHistory = [];
+        let currentCategory = "ທັງໝົດ";
+        let config = { logo: 'https://cdn-icons-png.flaticon.com/512/4080/4080032.png', qr: '', merchantId: 'PAY_ACCOUNT' };
+        
+        let menuData = [
+            { id: 1, name: 'ເບຍລາວ (ໃຫຍ່)', price: 25000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=200' },
+            { id: 2, name: 'ຕຳໝາກຫຸ່ງ', price: 20000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?w=200' },
+            { id: 3, name: 'ລາບໝູ', price: 45000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1547928576-a4a33237eceb?w=200' },
+            { id: 4, name: 'ແກງໜໍ່ໄມ້', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200' },
+            { id: 5, name: 'ປິ້ງໄກ່ນາ', price: 80000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=200' },
+            { id: 6, name: 'ນ້ຳດື່ມ (ນ້ອຍ)', price: 5000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=200' },
+            { id: 7, name: 'ນ້ຳອັດລົມ ກະປ໋ອງ', price: 10000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=200' },
+            { id: 8, name: 'ເຂົ້າຜັດໝູ', price: 30000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1512058560366-cd242d4285fe?w=200' },
+            { id: 9, name: 'ເຂົ້າຜັດທະເລ', price: 40000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=200' },
+            { id: 10, name: 'ເໝັ້ນຂົ້ວ', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=200' },
+            { id: 11, name: 'ຕົ້ມຍຳກຸ້ງ', price: 65000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?w=200' },
+            { id: 12, name: 'ຜັດກະເພົາໝູສັບ', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1632778149125-96c243652a25?w=200' },
+            { id: 13, name: 'ໄຂ່ຈຽວໝູສັບ', price: 25000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1510627489930-0c5459b41427?w=200' },
+            { id: 14, name: 'ແກງຈືດເຕົ້າຮູ້', price: 30000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200' },
+            { id: 15, name: 'ນ້ຳສົ້ມປັ່ນ', price: 15000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=200' },
+            { id: 16, name: 'ກາເຟເຢັນ', price: 18000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=200' },
+            { id: 17, name: 'ຊານົມມຸກ', price: 20000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1551046591-c39085038c3f?w=200' },
+            { id: 18, name: 'ໝາກໄມ້ລວມ', price: 30000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=200' },
+            { id: 19, name: 'ກະແລັມວານິລາ', price: 15000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1501443762214-6f91991c467e?w=200' },
+            { id: 20, name: 'ບົວລອຍໄຂ່ຫວານ', price: 20000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=200' },
+            { id: 21, name: 'ເຂົ້າໜຽວມ່ວງ', price: 35000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1621367044544-24e03f07a4c7?w=200' },
+            { id: 22, name: 'ຢຳວຸ້ນເສັ້ນ', price: 40000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200' },
+            { id: 23, name: 'ປາໜຶ້ງໝາກນາວ', price: 120000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1534604973900-c41ab4c5e636?w=200' },
+            { id: 24, name: 'ກຸ້ງແຊ່ນ້ຳປາ', price: 85000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1559740064-06f852ee815a?w=200' },
+            { id: 25, name: 'ຄໍໝູປິ້ງ', price: 45000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1529692236671-f1f6e9482172?w=200' },
+            { id: 26, name: 'ແໜມເນື່ອງ', price: 65000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1632778149125-96c243652a25?w=200' },
+            { id: 27, name: 'ເສັ້ນລ້ອນຂົ້ວ', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=200' },
+            { id: 28, name: 'ແກງໜໍ່ໄມ້ໃສ່ຜັກຂາ', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200' },
+            { id: 29, name: 'ເຜີເນື້ອ (ໃຫຍ່)', price: 40000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=200' },
+            { id: 30, name: 'ເຜີໝູ (ໃຫຍ່)', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=200' },
+            { id: 31, name: 'ເຂົ້າປຽກໄກ່', price: 30000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=200' },
+            { id: 32, name: 'ໝີ່ເຫຼືອງຂົ້ວ', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=200' },
+            { id: 33, name: 'ຕຳຖາດ', price: 80000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?w=200' },
+            { id: 34, name: 'ຕຳໝາກແຕງ', price: 20000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?w=200' },
+            { id: 35, name: 'ຊຸບໜໍ່ໄມ້', price: 30000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200' },
+            { id: 36, name: 'ໄສ້ອົ່ວ', price: 45000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1529692236671-f1f6e9482172?w=200' },
+            { id: 37, name: 'ໝູແດດດຽວ', price: 45000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1529692236671-f1f6e9482172?w=200' },
+            { id: 38, name: 'ນ້ຳໝາກພ້າວ', price: 20000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1563223552-30d01fda3ead?w=200' },
+            { id: 39, name: 'ຊາມະນາວ', price: 15000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=200' },
+            { id: 40, name: 'ເບຍລາວ (ນ້ອຍ)', price: 15000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=200' },
+            { id: 41, name: 'ເບຍສິງ (ໃຫຍ່)', price: 30000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=200' },
+            { id: 42, name: 'ເຫຼົ້າຂາວ', price: 15000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=200' },
+            { id: 43, name: 'ໂຊດາ', price: 8000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=200' },
+            { id: 44, name: 'ນ້ຳກ້ອນ (ຖັງ)', price: 10000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1563223552-30d01fda3ead?w=200' },
+            { id: 45, name: 'ສັງຂະຍາມ່ວງ', price: 25000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=200' },
+            { id: 46, name: 'ລອດຊ່ອງ', price: 20000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=200' },
+            { id: 47, name: 'ໝາກໄມ້ຕາມລະດູການ', price: 25000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=200' },
+            { id: 48, name: 'ເຂົ້າໜຽວຂາວ (ຕິບ)', price: 10000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200' },
+            { id: 49, name: 'ເຂົ້າຈ້າວ (ຖ້ວຍ)', price: 7000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1512058560366-cd242d4285fe?w=200' },
+            { id: 50, name: 'ຜັດຜັກບົ້ງໄຟແດງ', price: 30000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=200' }
+        ];
+
+        // NEW: Function to update menu columns
+        function updateMenuCols(val) {
+            const cols = parseInt(val) || 3;
+            document.documentElement.style.setProperty('--menu-cols', cols);
+        }
+
+        function handleKeyboard(e) {
+            if (document.getElementById('lock-screen').style.display !== 'none') {
+                if (e.key >= '0' && e.key <= '9') pressKey(e.key);
+                if (e.key === 'Backspace') deleteLast();
+                if (e.key === 'Escape') clearPass();
+                return;
+            }
+            if (e.key === "Escape") { if (isModalOpen()) closeModals(); else if (document.getElementById('pos-screen').style.display === 'flex') goHome(); }
+            if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveDataToLocal(false); }
+            if (e.key === "F1") { e.preventDefault(); if (document.getElementById('table-screen').style.display !== 'none') { activeTbl = 1; openPOS(); } else { document.getElementById('food-search').focus(); } }
+            if(e.key==="Enter" && document.getElementById('pay-modal').style.display==='flex' && !document.getElementById('confirm-pay-btn').disabled) { finalizePay(); }
+        }
+
+        function isModalOpen() { return Array.from(document.querySelectorAll('.modal-overlay')).some(m => m.style.display === 'flex'); }
+
+        function renderCategoryMenus() {
+            const categories = ["ທັງໝົດ", "ອາຫານ", "ເຄື່ອງດື່ມ", "ຂອງຫວານ"];
+            const posList = document.getElementById('pos-category-list');
+            if(!posList) return;
+            posList.innerHTML = '';
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `nav-item ${currentCategory === cat ? 'active' : ''}`;
+                btn.innerText = cat;
+                btn.onclick = () => { currentCategory = cat; renderCategoryMenus(); renderMenu(); };
+                posList.appendChild(btn);
+            });
+        }
+
+        function openTransferModal() {
+            if (tables[activeTbl].length === 0) return alert("ບໍ່ມີລາຍການໃຫ້ຍ້າຍ!");
+            const sel = document.getElementById('transfer-select');
+            sel.innerHTML = '';
+            for(let i=1; i<=tableCount; i++) {
+                if(i !== activeTbl) {
+                    const opt = document.createElement('option');
+                    opt.value = i; opt.innerText = `ໂຕ໊ະ ${i} ${tables[i].length > 0 ? '(ບໍ່ວ່າງ)' : '(ວ່າງ)'}`;
+                    sel.appendChild(opt);
+                }
+            }
+            document.getElementById('transfer-modal').style.display = 'flex';
+        }
+
+        function confirmTransfer() {
+            const target = document.getElementById('transfer-select').value;
+            tables[target] = [...tables[target], ...tables[activeTbl]];
+            tables[activeTbl] = [];
+            tableBooked[target] = tableBooked[activeTbl];
+            tableBooked[activeTbl] = false;
+            alert(`ຍ້າຍລາຍການໄປ ໂຕ໊ະ ${target} ສຳເລັດ!`);
+            closeModals(); goHome();
+        }
+
+        function exportHistoryToExcel() {
+            if (saleHistory.length === 0) return alert("ບໍ່ມີຂໍ້ມູນການຂາຍ!");
+            const excelData = saleHistory.flatMap(h => h.items.map(i => ({
+                "ວັນທີ": h.date, "ເວລາ": h.time, "ໂຕ໊ະ": h.table, "ລາຍການ": i.name, "ລາຄາ": i.price, "ຈຳນວນ": i.qty, "ລວມ": i.price * i.qty
+            })));
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "SalesHistory");
+            XLSX.writeFile(wb, `POS_Report_${new Date().toLocaleDateString()}.xlsx`);
+        }
+
+        function openReport() {
+            const today = new Date().toLocaleDateString();
+            let todayTotal = 0; let grandTotal = 0; let menuStats = {};
+            saleHistory.forEach(h => {
+                grandTotal += h.total; if (h.date === today) todayTotal += h.total;
+                h.items.forEach(item => { menuStats[item.name] = (menuStats[item.name] || 0) + item.qty; });
+            });
+            document.getElementById('rpt-today').innerText = todayTotal.toLocaleString() + " ₭";
+            document.getElementById('rpt-total').innerText = grandTotal.toLocaleString() + " ₭";
+            const topMenu = Object.entries(menuStats).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const rptList = document.getElementById('rpt-top-menu');
+            rptList.innerHTML = topMenu.length ? '' : '<p style="text-align:center; color:#888;">ຍັງບໍ່ມີຂໍ້ມູນການຂາຍ</p>';
+            topMenu.forEach(([name, qty]) => { rptList.innerHTML += `<div class="top-menu-item"><span>${name}</span><b>x${qty}</b></div>`; });
+            document.getElementById('report-modal').style.display = 'flex';
+        }
+
+        function handleFileSelect(event, type) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const res = e.target.result;
+                    if (type === 'logo') config.logo = res;
+                    else if (type === 'qr') config.qr = res;
+                    else if (type === 'food') { document.getElementById('in-food-img').value = res; document.getElementById('food-img-preview').src = res; }
+                    else if (type === 'bg') { document.documentElement.style.setProperty('--bg-img', `url(${res})`); }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveDataToLocal(isAuto = false) {
+            if(isAuto && !isAutoSaveEnabled) return;
+            const data = { 
+                tables, tableBooked, tableCount, menuData, config, isAutoSaveEnabled, saleHistory,
+                correctPass,
+                theme: document.body.hasAttribute('data-theme') ? 'dark' : 'light',
+                bgSettings: { img: getComputedStyle(document.documentElement).getPropertyValue('--bg-img'), blur: document.getElementById('set-blur').value, bright: document.getElementById('set-bright').value }
+            };
+            localStorage.setItem('pos_ohday_data', JSON.stringify(data));
+            if(isAuto) { const status = document.getElementById('autosave-status'); status.style.opacity = "1"; setTimeout(() => { status.style.opacity = "0"; }, 2000); }
+        }
+
+        setInterval(() => { saveDataToLocal(true); }, 1000);
+        function toggleAutoSave() { isAutoSaveEnabled = document.getElementById('autosave-toggle').checked; saveDataToLocal(false); }
+
+        function loadDataFromLocal() {
+            const saved = localStorage.getItem('pos_ohday_data');
+            if (saved) {
+                const p = JSON.parse(saved);
+                tables = p.tables || {}; tableBooked = p.tableBooked || {}; tableCount = p.tableCount || 12;
+                menuData = p.menuData || menuData; config = p.config || config; saleHistory = p.saleHistory || [];
+                correctPass = p.correctPass || "0000";
+                isAutoSaveEnabled = p.isAutoSaveEnabled !== undefined ? p.isAutoSaveEnabled : true;
+                document.getElementById('autosave-toggle').checked = isAutoSaveEnabled;
+                if(p.theme === 'dark') { document.body.setAttribute('data-theme', 'dark'); document.getElementById('darkmode-toggle').checked = true; }
+                if(p.bgSettings) {
+                    document.documentElement.style.setProperty('--bg-img', p.bgSettings.img);
+                    document.getElementById('set-blur').value = p.bgSettings.blur;
+                    document.getElementById('set-bright').value = p.bgSettings.bright;
+                    applyBgSettings();
+                }
+            }
+            init();
+        }
+
+        function applyBgSettings() {
+            const blur = document.getElementById('set-blur').value + 'px';
+            const bright = document.getElementById('set-bright').value + '%';
+            document.documentElement.style.setProperty('--bg-blur', blur);
+            document.documentElement.style.setProperty('--bg-brightness', bright);
+        }
+
+        function resetBackground() {
+            document.documentElement.style.setProperty('--bg-img', 'none');
+            document.getElementById('set-blur').value = 0; document.getElementById('set-bright').value = 100;
+            applyBgSettings();
+        }
+
+        function init() {
+            const grid = document.getElementById('table-grid');
+            if(!grid) return;
+            const cols = document.getElementById('set-cols').value;
+            const size = document.getElementById('set-size').value;
+            grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            if(window.innerWidth <= 850) { grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(100px, 1fr))`; }
+
+            grid.innerHTML = '';
+            for(let i=1; i<=tableCount; i++) {
+                if(!tables[i]) tables[i] = [];
+                const busy = tables[i].length > 0; 
+                const booked = tableBooked[i] === true;
+                const btn = document.createElement('button');
+                btn.className = `table-btn ${busy ? 'active' : (booked ? 'booked' : '')}`;
+                let statusText = busy ? "ບໍ່ວ່າງ" : (booked ? "ຈອງແລ້ວ" : "ວ່າງ");
+                btn.innerHTML = `<span style="font-size: 12px; opacity: 0.8;">ໂຕ໊ະ</span><span style="font-size: ${size/2}px; font-weight: 900; line-height: 1;">${i}</span><span style="font-size: 11px; margin-top: 5px;">${statusText}</span>`;
+                btn.onclick = () => { activeTbl = i; openPOS(); };
+                grid.appendChild(btn);
+            }
+        }
+
+        function openPOS() {
+            document.getElementById('table-screen').style.display = 'none';
+            document.getElementById('pos-screen').style.display = 'flex';
+            document.getElementById('pos-title').innerText = `ໂຕ໊ະ ${activeTbl}`;
+            updateBookingBtn(); 
+            renderCategoryMenus(); 
+            renderMenu(); 
+            renderCart();
+            updateMenuCols(document.getElementById('menu-cols-input').value);
+        }
+
+        function toggleBooking() { tableBooked[activeTbl] = !tableBooked[activeTbl]; updateBookingBtn(); saveDataToLocal(true); }
+        function updateBookingBtn() {
+            const btn = document.getElementById('booking-btn');
+            if(tableBooked[activeTbl]) { btn.innerText = "✖ ຍົກເລີກການຈອງ"; btn.style.background = "#555"; }
+            else { btn.innerText = "💗 ຈອງໂຕ໊ະ"; btn.style.background = "var(--booked)"; }
+        }
+
+        function renderMenu() {
+            const area = document.getElementById('menu-area');
+            const search = document.getElementById('food-search').value.toLowerCase();
+            area.innerHTML = '';
+            menuData.filter(m => {
+                const matchSearch = m.name.toLowerCase().includes(search);
+                const matchCat = currentCategory === "ທັງໝົດ" || m.category === currentCategory;
+                return matchSearch && matchCat;
+            }).forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'food-card';
+                card.innerHTML = `<div class="food-actions"><button class="action-btn" style="background:#fbbc04" onclick="openEditFood(event, ${item.id})">✏️</button><button class="action-btn del-food-btn" onclick="deleteMenuItem(event, ${item.id})">×</button></div><img src="${item.img}" class="food-img" onerror="this.src='https://via.placeholder.com/150'"><div class="food-info"><b>${item.name}</b><br><span style="color:var(--primary); font-weight:900;">${item.price.toLocaleString()} ₭</span></div>`;
+                card.onclick = () => {
+                    const found = tables[activeTbl].find(f => f.id === item.id);
+                    if(found) found.qty++; else tables[activeTbl].push({...item, qty:1});
+                    if(tableBooked[activeTbl]) { tableBooked[activeTbl] = false; updateBookingBtn(); }
+                    renderCart();
+                };
+                area.appendChild(card);
+            });
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-list'); list.innerHTML = '';
+            let total = 0;
+            tables[activeTbl].forEach(item => {
+                let lineTotal = item.price * item.qty; total += lineTotal;
+                list.innerHTML += `<div class="cart-item"><div style="display:flex; justify-content:space-between;"><b>${item.name}</b><span>${lineTotal.toLocaleString()} ₭</span></div><div style="display:flex; align-items:center; gap:10px; margin-top:5px;"><button onclick="updateQty(${item.id}, -1)">-</button><span>${item.qty}</span><button onclick="updateQty(${item.id}, 1)">+</button><button onclick="removeItem(${item.id})" style="margin-left:auto; color:red; border:none; background:none; cursor:pointer;">🗑</button></div></div>`;
+            });
+            document.getElementById('total-display').innerText = total.toLocaleString() + " ₭";
+        }
+
+        function updateQty(id, delta) {
+            const item = tables[activeTbl].find(i => i.id === id);
+            if(item) { item.qty += delta; if(item.qty <= 0) removeItem(id); }
+            renderCart();
+        }
+        function removeItem(id) { tables[activeTbl] = tables[activeTbl].filter(i => i.id !== id); renderCart(); }
+
+        function openPay() {
+            let total = tables[activeTbl].reduce((a,b)=>a+(b.price*b.qty), 0);
+            if(total <= 0) return;
+            document.getElementById('pay-modal').style.display='flex';
+            document.getElementById('pay-total-val').innerText = total.toLocaleString();
+            document.getElementById('pay-input').value = '';
+            const qrImg = document.getElementById('qr-auto-img');
+            const qrData = `bcelone://pay?merchantId=${config.merchantId}&amount=${total}&description=Table${activeTbl}`;
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+            calcChange();
+        }
+
+        function calcChange() {
+            let total = tables[activeTbl].reduce((a,b)=>a+(b.price*b.qty), 0);
+            let inputVal = document.getElementById('pay-input').value;
+            let cash = (parseFloat(inputVal) || 0) * 1000;
+            let change = cash - total;
+            const btn = document.getElementById('confirm-pay-btn');
+            const display = document.getElementById('change-display');
+            if(inputVal !== "" && change >= 0) { display.innerText = change.toLocaleString() + " ₭"; btn.disabled = false; btn.style.opacity = 1; }
+            else { display.innerText = (inputVal === "" ? "0" : "ຂາດ " + Math.abs(change).toLocaleString()) + " ₭"; btn.disabled = true; btn.style.opacity = 0.5; }
+        }
+
+        function finalizePay() {
+            const now = new Date();
+            const orderNo = "ORD-" + Math.floor(1000 + Math.random() * 9000);
+            let total = tables[activeTbl].reduce((a,b)=>a+(b.price*b.qty), 0);
+            let cash = (parseFloat(document.getElementById('pay-input').value) || 0) * 1000;
+            
+            saleHistory.unshift({ 
+                date: now.toLocaleDateString(), 
+                time: now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0'), 
+                table: activeTbl, total: total, items: JSON.parse(JSON.stringify(tables[activeTbl])) 
+            });
+            
+            const receiptArea = document.getElementById('receipt-print');
+            let rowsHtml = tables[activeTbl].map((i, idx) => `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>${i.name}</td>
+                    <td>${i.qty}</td>
+                    <td>${i.price.toLocaleString()}</td>
+                    <td style="text-align:right">${(i.price*i.qty).toLocaleString()}</td>
+                </tr>
+            `).join('');
+
+            receiptArea.innerHTML = `
+                <div class="receipt-header">
+                    <img src="${config.logo}" class="receipt-logo" onerror="this.style.display='none'">
+                    <div style="font-size:14px; font-weight:bold;">ໃບບິນຮັບເງິນ / Receipt</div>
+                    <div style="margin-top:5px;">ເລກທີ / No: ${orderNo}</div>
+                    <div>ເວລາສິ້ນສຸດ / End Time: ${now.toLocaleTimeString()}</div>
+                    <div style="font-weight:bold;">ໂຕ໊ະ / Table: ${activeTbl}</div>
+                </div>
+                <div class="receipt-line"></div>
+                <table class="receipt-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th style="text-align:right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+                <div class="receipt-line"></div>
+                <div class="receipt-row"><b>ລວມທັງໝົດ / Total:</b><b>${total.toLocaleString()} ₭</b></div>
+                <div class="receipt-row"><span>ຮັບເງິນ / Cash:</span><span>${cash.toLocaleString()}</span></div>
+                <div class="receipt-row"><span>ເງິນທອນ / Change:</span><span>${(cash - total).toLocaleString()}</span></div>
+                <div style="text-align:center; margin-top:10px;">
+                    ${config.qr ? `<img src="${config.qr}" class="qr-payment">` : ''}
+                </div>
+                <div class="receipt-footer">
+                    <p>ກະລຸນາຊຳລະເງິນທີ່ເຄົາເຕີ<br>Please pay at the counter</p>
+                    <p><b>ຂໍຂອບໃຈ / Thank You</b></p>
+                </div>
+            `;
+
+            window.print(); 
+            closeModals();
+            document.getElementById('thank-you-popup').classList.add('show');
+            setTimeout(() => { 
+                document.getElementById('thank-you-popup').classList.remove('show'); 
+                tables[activeTbl] = []; 
+                tableBooked[activeTbl] = false; 
+                goHome(); 
+                saveDataToLocal(true); 
+            }, 2000);
+        }
+
+        function openHistory() {
+            const list = document.getElementById('history-list'); list.innerHTML = '';
+            if(saleHistory.length === 0) list.innerHTML = '<p style="text-align:center; color:#888;">ຍັງບໍ່ມີປະຫວັດການຂາຍ</p>';
+            else saleHistory.forEach(h => {
+                let itemsNames = h.items.map(i => `${i.name} x${i.qty}`).join(', ');
+                list.innerHTML += `<div class="history-item"><div class="history-header"><span>🕒 ${h.time} - ໂຕ໊ະ ${h.table}</span><span class="history-total">${h.total.toLocaleString()} ₭</span></div><div style="font-size:14px; color:#666;">${itemsNames}</div></div>`;
+            });
+            document.getElementById('history-modal').style.display = 'flex';
+        }
+
+        function clearHistory() { if(confirm("ທ່ານຕ້ອງການລ້າງປະຫວັດການຂາຍທັງໝົດແທ້ຫຼືບໍ່?")) { saleHistory = []; openHistory(); saveDataToLocal(true); } }
+
+        function saveFood() {
+            const id = document.getElementById('edit-food-id').value;
+            const name = document.getElementById('in-food-name').value;
+            const price = parseInt(document.getElementById('in-food-price').value);
+            const cat = document.getElementById('in-food-category').value;
+            const img = document.getElementById('in-food-img').value;
+            if(name && price) {
+                if (id) { const idx = menuData.findIndex(m => m.id == id); menuData[idx] = { ...menuData[idx], name, price, category: cat, img: img || 'https://via.placeholder.com/150' }; }
+                else { menuData.push({ id: Date.now(), name, price, category: cat, img: img || 'https://via.placeholder.com/150' }); }
+                renderMenu(); closeModals(); saveDataToLocal(true);
+            }
+        }
+
+        function toggleTheme() { 
+            const body = document.body; 
+            const isDark = document.getElementById('darkmode-toggle').checked;
+            if (isDark) body.setAttribute('data-theme', 'dark'); 
+            else body.removeAttribute('data-theme');
+            saveDataToLocal(true);
+        }
+
+        function goHome() { 
+            document.getElementById('pos-screen').style.display='none'; 
+            document.getElementById('table-screen').style.display='flex'; 
+            init(); 
+        }
+
+        function openSettings() { document.getElementById('settings-modal').style.display='flex'; }
+        function openAddFood() { document.getElementById('food-modal-title').innerText="➕ ເພີ່ມເມນູ"; document.getElementById('edit-food-id').value=""; document.getElementById('food-img-preview').src='https://via.placeholder.com/150'; document.getElementById('food-modal').style.display='flex'; }
+        function openEditFood(e, id) { e.stopPropagation(); const item = menuData.find(m => m.id === id); document.getElementById('edit-food-id').value=id; document.getElementById('in-food-name').value=item.name; document.getElementById('in-food-price').value=item.price; document.getElementById('in-food-category').value=item.category || "ທັງໝົດ"; document.getElementById('food-img-preview').src=item.img; document.getElementById('food-modal').style.display='flex'; }
+        function deleteMenuItem(e, id) { e.stopPropagation(); if(confirm("ລົບເມນູນີ້?")) { menuData = menuData.filter(m => m.id !== id); renderMenu(); saveDataToLocal(true); } }
+        function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display='none'); }
+        function addTable() { tableCount++; init(); saveDataToLocal(true); }
+        function removeTable() { if(tableCount > 1) { tableCount--; init(); saveDataToLocal(true); } }
+
+        window.onload = loadDataFromLocal;
+        window.onresize = init;
+    </script>
+</body>
+</html>
