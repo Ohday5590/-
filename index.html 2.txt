@@ -1,998 +1,1704 @@
 <!DOCTYPE html>
-<html lang="lo">
+
+<html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ລະບົບ POS ສຸດລ້ຳ ຂອງ ໂອເດ - ເວີເຊັນພາສາລາວ</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700;900&display=swap');
-        
-        :root {
-            --primary: #000000; --success: #34a853; --danger: #ea4335; --booked: #ff69b4;
-            --bg: #f0f2f5; --card: #ffffff; --text: #202124; --header-bg: #ffffff;
-            --border: #ddd; --cart-bg: #f8f9fa; --search-bg: #ffffff;
-            --input-bg: #ffffff;
-            --bg-img: url(''); --bg-blur: 0px; --bg-brightness: 100%;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ຫຍໍ້ H2O · Hydration & Wellness</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-deep: #0A2540;
+    --blue-mid: #1A6CE8;
+    --blue-light: #4FA3FF;
+    --cyan: #00D4FF;
+    --cyan-glow: rgba(0,212,255,0.25);
+    --teal: #00B4A0;
+    --green: #00E5A0;
+    --orange: #FF8C42;
+    --white: #F0F8FF;
+    --glass: rgba(255,255,255,0.07);
+    --glass-border: rgba(255,255,255,0.15);
+    --text-main: #E8F4FF;
+    --text-sub: rgba(200,230,255,0.7);
+    --card-bg: rgba(10,37,64,0.6);
+    --nav-h: 70px;
+  }
 
-        [data-theme="dark"] {
-            --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --header-bg: #2d2d2d;
-            --border: #444; --cart-bg: #2d2d2d; --search-bg: #3d3d3d;
-            --input-bg: #3d3d3d;
-        }
+- { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body { 
-            margin: 0; 
-            font-family: 'Kanit', sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            overflow: hidden; 
-            transition: 0.3s; 
-            -webkit-tap-highlight-color: transparent; 
-            position: relative;
-        }
+body {
+font-family: ‘Prompt’, sans-serif;
+background: var(–blue-deep);
+color: var(–text-main);
+min-height: 100vh;
+overflow-x: hidden;
+position: relative;
+}
 
-        /* --- Passcode Screen Styles --- */
-        #lock-screen {
-            position: fixed; inset: 0; background: var(--bg); z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .user-profile { text-align: center; margin-bottom: 30px; }
-        .user-name { font-size: 24px; font-weight: bold; color: var(--text); margin-top: 10px; text-transform: uppercase; }
-        
-        .passcode-dots { display: flex; gap: 15px; margin-bottom: 40px; }
-        .dot { width: 15px; height: 15px; border: 2px solid var(--primary); border-radius: 4px; transition: 0.2s; }
-        .dot.active { background: var(--primary); transform: scale(1.2); }
+/* Animated background */
+body::before {
+content: ‘’;
+position: fixed; inset: 0;
+background:
+radial-gradient(ellipse 80% 60% at 20% -10%, rgba(0,212,255,0.18) 0%, transparent 60%),
+radial-gradient(ellipse 60% 50% at 80% 110%, rgba(26,108,232,0.2) 0%, transparent 60%),
+radial-gradient(ellipse 40% 40% at 50% 50%, rgba(0,180,160,0.07) 0%, transparent 70%);
+pointer-events: none;
+z-index: 0;
+}
 
-        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        .num-btn { 
-            width: 70px; height: 70px; border-radius: 15px; border: 1px solid var(--border);
-            background: var(--card); color: var(--text); font-size: 24px; font-weight: bold;
-            cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center;
-        }
-        .num-btn:active { background: var(--primary); color: white; transform: scale(0.9); }
-        .num-btn.clear { color: var(--danger); }
+.app { position: relative; z-index: 1; max-width: 430px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
 
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: var(--bg-img);
-            background-size: cover;
-            background-position: center;
-            filter: blur(var(--bg-blur)) brightness(var(--bg-brightness));
-            z-index: -1;
-            transition: 0.3s;
-        }
-        
-        .screen { width: 100vw; height: 100vh; display: flex; flex-direction: column; padding-bottom: 40px; box-sizing: border-box; position: relative; }
+/* =================== NAVBAR =================== */
+nav {
+height: var(–nav-h);
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 0 20px;
+position: sticky; top: 0; z-index: 100;
+background: rgba(10,37,64,0.85);
+backdrop-filter: blur(20px);
+border-bottom: 1px solid var(–glass-border);
+}
 
-        .main-header { background: var(--header-bg); padding: 10px 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 10; border-bottom: 1px solid var(--border); }
-        .creator-name { font-size: 14px; color: var(--primary); font-weight: bold; }
+.nav-logo {
+font-family: ‘Nunito’, sans-serif;
+font-weight: 900;
+font-size: 1.3rem;
+background: linear-gradient(135deg, var(–cyan), var(–blue-light));
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+background-clip: text;
+}
 
-        #autosave-status { font-size: 12px; color: #34a853; margin-left: 10px; opacity: 0; transition: 0.5s; font-weight: normal; }
+.nav-logo span { font-weight: 400; opacity: 0.7; }
 
-        .nav-menu { 
-            display: flex; gap: 10px; padding: 10px 20px; background: var(--card); border-bottom: 1px solid var(--border); 
-            overflow-x: auto; scrollbar-width: none; z-index: 9;
-        }
-        .nav-menu::-webkit-scrollbar { display: none; }
-        .nav-item { 
-            padding: 8px 15px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); 
-            color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; white-space: nowrap; transition: 0.2s;
-        }
-        .nav-item:hover { background: var(--primary); color: white; }
-        .nav-item.active { background: var(--primary); color: white; } 
-        .btn-save-data { background: #4285f4; color: white; border: none; }
+.lang-toggle {
+display: flex; gap: 4px;
+background: var(–glass);
+border: 1px solid var(–glass-border);
+border-radius: 20px;
+padding: 4px;
+}
 
-        /* Modified Search Container */
-        .search-container { 
-            padding: 10px 20px; 
-            background: var(--header-bg); 
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        .search-input { flex: 1; padding: 12px 20px; border-radius: 15px; border: 1px solid var(--border); background: var(--search-bg); color: var(--text); font-size: 16px; outline: none; box-sizing: border-box; }
-        .col-input { width: 80px; padding: 12px; border-radius: 15px; border: 1px solid var(--border); text-align: center; font-family: inherit; font-weight: bold; background: var(--card); color: var(--text); }
+.lang-btn {
+padding: 3px 10px;
+border-radius: 14px;
+border: none;
+background: transparent;
+color: var(–text-sub);
+font-size: 0.72rem;
+font-family: ‘Prompt’, sans-serif;
+cursor: pointer;
+transition: all 0.2s;
+}
 
-        .table-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
-            gap: 15px; 
-            padding: 20px; 
-            overflow-y: auto; 
-            flex: 1; 
-            align-content: start;
-        }
-        
-        .table-btn { 
-            width: 100%; 
-            aspect-ratio: 1/1; 
-            border-radius: 20px; 
-            background: var(--card); 
-            border: 1px solid var(--border); 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-            transition: 0.3s; 
-            color: var(--text);
-            padding: 10px;
-            box-sizing: border-box;
-            position: relative;
-        }
+.lang-btn.active {
+background: var(–blue-mid);
+color: white;
+}
 
-        .table-btn:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); border-color: var(--primary); }
-        .table-btn.active { background: var(--success) !important; color: white; border: none; }
-        .table-btn.booked { background: var(--booked) !important; color: white; border: none; }
+/* =================== PAGES =================== */
+.page { display: none; flex-direction: column; flex: 1; padding: 0 0 calc(var(–nav-h) + 10px); }
+.page.active { display: flex; }
 
-        /* FIXED POS LAYOUT */
-        .pos-layout { 
-            display: flex; 
-            flex: 1; 
-            overflow: hidden; 
-            height: calc(100vh - 180px); /* Adjust based on header/nav height */
-        }
-        .menu-container { 
-            flex: 7; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100%;
-            overflow: hidden;
-        }
-        .menu-area { 
-            flex: 1; 
-            padding: 15px; 
-            display: grid; 
-            grid-template-columns: repeat(var(--menu-cols, auto-fill), minmax(110px, 1fr)); 
-            gap: 12px; 
-            overflow-y: auto; 
-            align-content: start; 
-            min-height: 200px;
-        }
-        .cart-area { 
-            flex: 3; 
-            background: var(--card); 
-            border-left: 1px solid var(--border); 
-            display: flex; 
-            flex-direction: column; 
-            padding: 20px; 
-            min-width: 320px; 
-            height: 100%;
-            overflow: hidden;
-        }
-        #cart-list { flex: 1; overflow-y: auto; margin-bottom: 10px; }
+/* =================== HOME PAGE =================== */
+.home-header {
+padding: 24px 20px 16px;
+display: flex;
+justify-content: space-between;
+align-items: flex-start;
+}
 
-        @media (max-width: 850px) {
-            .pos-layout { flex-direction: column; overflow-y: auto; height: auto; }
-            .menu-container { flex: none; height: 50vh; border-bottom: 2px solid var(--border); }
-            .cart-area { flex: none; height: 50vh; min-width: 100%; border-left: none; padding: 15px; box-sizing: border-box; }
-            .menu-area { grid-template-columns: repeat(var(--menu-cols, 3), 1fr); }
-        }
+.greeting { font-size: 0.85rem; color: var(–text-sub); margin-bottom: 2px; }
+.date-text { font-size: 0.78rem; color: var(–text-sub); opacity: 0.6; }
 
-        .food-card { background: var(--card); border-radius: 15px; overflow: hidden; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid var(--border); transition: 0.3s; position: relative; min-height: 140px; }
-        .food-img { width: 100%; height: 80px; object-fit: cover; background: #333; }
-        .food-info { padding: 8px; text-align: center; }
-        .food-info b { font-size: 13px; display: block; height: 38px; overflow: hidden; line-height: 1.2; }
-        .food-info span { font-size: 12px; }
-        
-        .food-actions { position: absolute; top: 3px; right: 3px; display: flex; gap: 3px; z-index: 5; }
-        .action-btn { border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; }
-        .del-food-btn { background: var(--danger); }
-        .edit-food-btn { background: #fbbc04; }
+.weather-badge {
+display: flex;
+align-items: center;
+gap: 6px;
+background: var(–glass);
+border: 1px solid var(–glass-border);
+border-radius: 12px;
+padding: 6px 12px;
+font-size: 0.78rem;
+color: var(–orange);
+}
 
-        .cart-item { background: var(--cart-bg); border-radius: 15px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
+/* Water cup hero */
+.cup-section {
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 10px 20px 20px;
+}
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
-        .modal-window { background: var(--card); color: var(--text); width: 100%; max-width: 450px; padding: 30px; border-radius: 35px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
-        
-        .report-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .report-box { background: var(--bg); padding: 15px; border-radius: 20px; text-align: center; border: 1px solid var(--border); }
-        .report-box h4 { margin: 0 0 5px 0; font-size: 14px; color: #888; }
-        .report-box p { margin: 0; font-size: 20px; font-weight: 900; color: var(--success); }
-        .top-menu-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px dashed var(--border); }
+.cup-wrap {
+position: relative;
+width: 160px;
+height: 220px;
+cursor: pointer;
+}
 
-        #qr-auto-container { text-align: center; margin: 10px 0; }
-        #qr-auto-img { width: 180px; height: 180px; border-radius: 10px; border: 5px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+.cup-svg { width: 100%; height: 100%; }
 
-        .history-item { 
-            background: var(--bg); border-radius: 15px; padding: 15px; margin-bottom: 10px; border: 1px solid var(--border); 
-        }
-        .history-header { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px dashed var(--border); padding-bottom: 5px; margin-bottom: 5px; }
-        .history-total { font-size: 1.2rem; color: var(--success); font-weight: 900; }
+.cup-percent {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+font-family: ‘Nunito’, sans-serif;
+font-weight: 900;
+font-size: 2.4rem;
+text-shadow: 0 0 20px var(–cyan-glow);
+color: white;
+pointer-events: none;
+}
 
-        .btn-back-settings {
-            position: absolute; top: 20px; left: 20px; width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 12px; border: 1px solid var(--border); background: var(--bg);
-            color: var(--text); cursor: pointer; font-size: 18px; transition: 0.2s; z-index: 10;
-        }
-        .btn-back-settings:hover { background: var(--primary); color: white; }
+.tap-hint {
+font-size: 0.72rem;
+color: var(–text-sub);
+margin-top: 8px;
+opacity: 0.7;
+animation: pulse-hint 2s ease-in-out infinite;
+}
 
-        .settings-content h3 { margin: 20px 0 10px 0; font-size: 18px; color: var(--success); border-left: 4px solid var(--success); padding-left: 10px; }
-        .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 10px; }
-        
-        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--success); }
-        input:checked + .slider:before { transform: translateX(24px); }
+@keyframes pulse-hint { 0%,100%{opacity:0.5} 50%{opacity:1} }
 
-        .btn-upload { background: #666; color: white; padding: 10px; border-radius: 10px; display: block; text-align: center; cursor: pointer; font-size: 14px; border: none; }
+.water-stats {
+display: flex;
+gap: 12px;
+justify-content: center;
+margin-top: 16px;
+width: 100%;
+}
 
-        .pay-summary-box { background: var(--cart-bg); padding: 15px; border-radius: 20px; margin-bottom: 15px; text-align: center; border: 1px solid var(--border); }
-        .cash-input-wrapper { position: relative; display: flex; align-items: center; margin-bottom: 15px; }
-        .input-pay-main { width: 100%; padding: 15px clamp(70px, 10vw, 100px) 15px 20px; font-size: clamp(24px, 5vw, 40px); font-weight: bold; border-radius: 20px; border: 3px solid var(--primary); background: var(--bg); color: var(--text); text-align: right; outline: none; box-sizing: border-box; }
-        .cash-suffix { position: absolute; right: 20px; font-size: clamp(20px, 4vw, 35px); font-weight: bold; color: #888; pointer-events: none; }
-        
-        .change-box { background: #e8f5e9; padding: 20px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        [data-theme="dark"] .change-box { background: #1b3320; }
-        #change-display { font-size: clamp(20px, 4vw, 38px); font-weight: 900; color: var(--success); }
+.stat-pill {
+flex: 1;
+background: var(–glass);
+border: 1px solid var(–glass-border);
+border-radius: 16px;
+padding: 12px 16px;
+text-align: center;
+}
 
-        .main-footer { position: fixed; bottom: 0; width: 100%; background: #000; color: #888; text-align: center; padding: 8px 0; font-size: 13px; z-index: 100; border-top: 1px solid var(--primary); }
+.stat-pill .val {
+font-family: ‘Nunito’, sans-serif;
+font-weight: 800;
+font-size: 1.3rem;
+color: var(–cyan);
+}
 
-        /* --- Print Styles --- */
-        #receipt-print { display: none; }
-        @media print {
-            body * { visibility: hidden; }
-            #receipt-print, #receipt-print * { visibility: visible; }
-            #receipt-print { 
-                display: block; position: absolute; left: 0; top: 0; width: 80mm; padding: 4mm; 
-                color: #000; background: #fff; font-family: 'Kanit', sans-serif; font-size: 11px; 
-            }
-            .receipt-header { text-align: center; margin-bottom: 8px; }
-            .receipt-logo { width: 40px; height: 40px; object-fit: contain; margin-bottom: 4px; }
-            .receipt-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
-            .receipt-table th { border-bottom: 1px solid #000; text-align: left; padding: 4px 2px; font-size: 10px; }
-            .receipt-table td { padding: 4px 2px; vertical-align: top; }
-            .receipt-line { border-top: 1px dashed #000; margin: 6px 0; }
-            .receipt-row { display: flex; justify-content: space-between; margin: 2px 0; }
-            .qr-payment { width: 120px; height: 120px; display: block; margin: 8px auto; object-fit: contain; }
-            .receipt-footer { text-align: center; margin-top: 10px; font-size: 10px; }
-        }
+.stat-pill .lbl { font-size: 0.68rem; color: var(–text-sub); margin-top: 2px; }
 
-        #thank-you-popup {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
-            background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            text-align: center; z-index: 2000; display: none; opacity: 0; transition: 0.3s;
-            color: #000; border: 2px solid var(--success);
-        }
-        #thank-you-popup.show { display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+/* Quick Add buttons */
+.quick-add-section { padding: 0 20px; }
+.section-title { font-size: 0.8rem; color: var(–text-sub); margin-bottom: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
 
-        /* Input Style for Password Change */
-        .pass-input {
-            width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border);
-            background: var(--bg); color: var(--text); font-size: 16px; margin-top: 5px;
-        }
-    </style>
+.quick-btns {
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+gap: 10px;
+}
+
+.quick-btn {
+background: var(–glass);
+border: 1px solid var(–glass-border);
+border-radius: 16px;
+padding: 14px 8px;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 4px;
+cursor: pointer;
+transition: all 0.2s;
+position: relative;
+overflow: hidden;
+}
+
+.quick-btn::after {
+content: ‘’;
+position: absolute;
+inset: 0;
+background: radial-gradient(circle at center, var(–cyan-glow), transparent 70%);
+opacity: 0;
+transition: opacity 0.3s;
+}
+
+.quick-btn:active::after { opacity: 1; }
+.quick-btn:active { transform: scale(0.94); }
+
+.quick-btn .icon { font-size: 1.4rem; }
+.quick-btn .ml { font-family: ‘Nunito’, sans-serif; font-weight: 800; font-size: 0.85rem; color: var(–cyan); }
+.quick-btn .cup-name { font-size: 0.6rem; color: var(–text-sub); }
+
+/* Motivation card */
+.motivation-card {
+margin: 16px 20px 0;
+background: linear-gradient(135deg, rgba(0,212,255,0.12), rgba(26,108,232,0.12));
+border: 1px solid rgba(0,212,255,0.25);
+border-radius: 20px;
+padding: 16px 20px;
+position: relative;
+overflow: hidden;
+}
+
+.motivation-card::before {
+content: ‘💧’;
+position: absolute;
+right: 16px;
+top: 50%;
+transform: translateY(-50%);
+font-size: 2.5rem;
+opacity: 0.3;
+}
+
+.motiv-label { font-size: 0.68rem; color: var(–cyan); font-weight: 600; margin-bottom: 4px; }
+.motiv-text { font-size: 0.88rem; line-height: 1.5; color: var(–text-main); font-weight: 300; }
+
+/* History mini */
+.history-mini {
+margin: 16px 20px 0;
+}
+
+.history-bars {
+display: flex;
+align-items: flex-end;
+gap: 8px;
+height: 60px;
+}
+
+.hbar-wrap {
+flex: 1;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 4px;
+height: 100%;
+justify-content: flex-end;
+}
+
+.hbar {
+width: 100%;
+border-radius: 6px 6px 0 0;
+min-height: 4px;
+transition: height 0.6s cubic-bezier(.34,1.56,.64,1);
+}
+
+.hbar-day { font-size: 0.6rem; color: var(–text-sub); margin-top: 4px; }
+
+/* =================== EXERCISE PAGE =================== */
+.ex-header { padding: 20px 20px 10px; }
+.ex-title { font-size: 1.4rem; font-weight: 700; }
+.ex-subtitle { font-size: 0.8rem; color: var(–text-sub); margin-top: 2px; }
+
+.step-counter-card {
+margin: 0 20px;
+background: linear-gradient(135deg, rgba(0,229,160,0.12), rgba(0,180,160,0.12));
+border: 1px solid rgba(0,229,160,0.25);
+border-radius: 24px;
+padding: 20px;
+display: flex;
+align-items: center;
+gap: 20px;
+}
+
+.step-ring {
+width: 90px;
+height: 90px;
+flex-shrink: 0;
+position: relative;
+}
+
+.step-ring svg { width: 90px; height: 90px; transform: rotate(-90deg); }
+
+.step-ring-num {
+position: absolute;
+inset: 0;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+}
+
+.step-ring-num .num {
+font-family: ‘Nunito’, sans-serif;
+font-weight: 900;
+font-size: 1.1rem;
+color: var(–green);
+line-height: 1;
+}
+
+.step-ring-num .lbl { font-size: 0.55rem; color: var(–text-sub); }
+
+.step-info { flex: 1; }
+.step-info .big { font-size: 1rem; font-weight: 700; }
+.step-info .sub { font-size: 0.75rem; color: var(–text-sub); margin-top: 2px; }
+.step-info .kcal { font-size: 0.78rem; color: var(–orange); margin-top: 8px; }
+
+.quick-workout-section { padding: 16px 20px 0; }
+
+.workout-cards {
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+
+.workout-card {
+background: var(–glass);
+border: 1px solid var(–glass-border);
+border-radius: 20px;
+padding: 16px;
+display: flex;
+align-items: center;
+gap: 16px;
+cursor: pointer;
+transition: all 0.2s;
+position: relative;
+overflow: hidden;
+}
+
+.workout-card:active { transform: scale(0.97); }
+
+.workout-icon {
+width: 52px;
+height: 52px;
+border-radius: 14px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 1.6rem;
+flex-shrink: 0;
+}
+
+.workout-info { flex: 1; }
+.workout-name { font-weight: 700; font-size: 0.95rem; }
+.workout-meta { font-size: 0.72rem; color: var(–text-sub); margin-top: 3px; }
+
+.workout-start-btn {
+background: linear-gradient(135deg, var(–blue-mid), var(–cyan));
+border: none;
+border-radius: 12px;
+color: white;
+font-size: 0.72rem;
+font-family: ‘Prompt’, sans-serif;
+font-weight: 600;
+padding: 8px 14px;
+cursor: pointer;
+white-space: nowrap;
+}
+
+/* =================== VITAMIN PAGE =================== */
+.vit-header { padding: 20px 20px 10px; }
+.vit-title { font-size: 1.4rem; font-weight: 700; }
+.vit-subtitle { font-size: 0.8rem; color: var(–text-sub); margin-top: 2px; }
+
+.vit-search {
+margin: 0 20px 16px;
+display: flex;
+align-items: center;
+gap: 10px;
+background: var(–glass);
+border: 1px solid var(–glass-border);
+border-radius: 14px;
+padding: 10px 16px;
+}
+
+.vit-search input {
+flex: 1;
+background: transparent;
+border: none;
+outline: none;
+color: var(–text-main);
+font-size: 0.85rem;
+font-family: ‘Prompt’, sans-serif;
+}
+
+.vit-search input::placeholder { color: var(–text-sub); }
+
+.vit-grid {
+padding: 0 20px;
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+
+.vit-card {
+background: var(–glass);
+border: 1px solid var(–glass-border);
+border-radius: 18px;
+overflow: hidden;
+cursor: pointer;
+transition: all 0.2s;
+}
+
+.vit-card-head {
+padding: 14px 16px;
+display: flex;
+align-items: center;
+gap: 12px;
+}
+
+.vit-icon {
+width: 44px;
+height: 44px;
+border-radius: 12px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 1.4rem;
+flex-shrink: 0;
+}
+
+.vit-name { font-weight: 700; font-size: 0.9rem; }
+.vit-alias { font-size: 0.7rem; color: var(–text-sub); margin-top: 2px; }
+.vit-expand { margin-left: auto; color: var(–text-sub); font-size: 0.8rem; transition: transform 0.2s; }
+.vit-card.open .vit-expand { transform: rotate(180deg); }
+
+.vit-body {
+max-height: 0;
+overflow: hidden;
+transition: max-height 0.3s ease;
+border-top: 0px solid var(–glass-border);
+}
+
+.vit-card.open .vit-body {
+max-height: 200px;
+border-top: 1px solid var(–glass-border);
+}
+
+.vit-body-inner {
+padding: 14px 16px;
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+
+.vit-row {
+display: flex;
+justify-content: space-between;
+align-items: flex-start;
+}
+
+.vit-row .key { font-size: 0.72rem; color: var(–text-sub); }
+.vit-row .value { font-size: 0.78rem; font-weight: 600; color: var(–text-main); text-align: right; max-width: 55%; }
+
+/* =================== SETTINGS PAGE =================== */
+.settings-header { padding: 20px 20px 16px; }
+.settings-title { font-size: 1.4rem; font-weight: 700; }
+
+.profile-card {
+margin: 0 20px 20px;
+background: linear-gradient(135deg, rgba(26,108,232,0.2), rgba(0,212,255,0.1));
+border: 1px solid rgba(0,212,255,0.2);
+border-radius: 24px;
+padding: 20px;
+}
+
+.profile-avatar {
+width: 64px; height: 64px;
+border-radius: 50%;
+background: linear-gradient(135deg, var(–blue-mid), var(–cyan));
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 1.8rem;
+margin-bottom: 12px;
+}
+
+.profile-name { font-weight: 700; font-size: 1.1rem; }
+.profile-goal { font-size: 0.78rem; color: var(–cyan); margin-top: 4px; }
+
+.settings-form { padding: 0 20px; display: flex; flex-direction: column; gap: 12px; }
+
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 0.78rem; color: var(–text-sub); font-weight: 600; }
+
+.form-input {
+background: var(–glass);
+border: 1px solid var(–glass-border);
+border-radius: 12px;
+padding: 12px 16px;
+color: var(–text-main);
+font-size: 0.9rem;
+font-family: ‘Prompt’, sans-serif;
+outline: none;
+transition: border-color 0.2s;
+width: 100%;
+}
+
+.form-input:focus { border-color: var(–cyan); }
+
+.calc-result {
+background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(0,229,160,0.1));
+border: 1px solid rgba(0,212,255,0.2);
+border-radius: 14px;
+padding: 14px 16px;
+margin-top: 4px;
+}
+
+.calc-result .res-label { font-size: 0.72rem; color: var(–text-sub); margin-bottom: 4px; }
+
+.calc-result .res-value {
+font-family: ‘Nunito’, sans-serif;
+font-weight: 900;
+font-size: 1.5rem;
+color: var(–cyan);
+}
+
+.save-btn {
+background: linear-gradient(135deg, var(–blue-mid), var(–cyan));
+border: none;
+border-radius: 14px;
+color: white;
+font-size: 0.9rem;
+font-family: ‘Prompt’, sans-serif;
+font-weight: 700;
+padding: 16px;
+cursor: pointer;
+width: 100%;
+margin-top: 8px;
+transition: all 0.2s;
+}
+
+.save-btn:active { transform: scale(0.97); }
+
+/* =================== BOTTOM NAV =================== */
+.bottom-nav {
+position: fixed;
+bottom: 0;
+left: 50%;
+transform: translateX(-50%);
+width: 100%;
+max-width: 430px;
+height: var(–nav-h);
+background: rgba(10,37,64,0.9);
+backdrop-filter: blur(20px);
+border-top: 1px solid var(–glass-border);
+display: flex;
+align-items: center;
+justify-content: space-around;
+z-index: 100;
+}
+
+.nav-item {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 3px;
+cursor: pointer;
+padding: 8px 20px;
+border-radius: 14px;
+transition: all 0.2s;
+}
+
+.nav-item .nav-icon { font-size: 1.4rem; filter: grayscale(1) opacity(0.5); transition: all 0.2s; }
+.nav-item .nav-label { font-size: 0.62rem; color: var(–text-sub); transition: all 0.2s; }
+
+.nav-item.active .nav-icon { filter: none; }
+.nav-item.active .nav-label { color: var(–cyan); font-weight: 600; }
+
+/* Ripple effect */
+.ripple {
+position: fixed;
+border-radius: 50%;
+background: rgba(0,212,255,0.3);
+pointer-events: none;
+animation: ripple-out 0.6s ease-out forwards;
+z-index: 999;
+}
+
+@keyframes ripple-out {
+from { transform: scale(0); opacity: 1; }
+to { transform: scale(4); opacity: 0; }
+}
+
+/* Toast */
+.toast {
+position: fixed;
+top: 80px;
+left: 50%;
+transform: translateX(-50%) translateY(-20px);
+background: rgba(0,212,255,0.15);
+border: 1px solid rgba(0,212,255,0.4);
+backdrop-filter: blur(20px);
+border-radius: 20px;
+padding: 10px 20px;
+font-size: 0.82rem;
+color: var(–cyan);
+white-space: nowrap;
+opacity: 0;
+transition: all 0.3s;
+z-index: 999;
+}
+
+.toast.show {
+opacity: 1;
+transform: translateX(-50%) translateY(0);
+}
+
+/* Workout modal */
+.workout-modal {
+display: none;
+position: fixed;
+inset: 0;
+z-index: 500;
+background: rgba(0,0,0,0.6);
+backdrop-filter: blur(8px);
+align-items: flex-end;
+}
+
+.workout-modal.open { display: flex; }
+
+.workout-modal-inner {
+width: 100%;
+max-width: 430px;
+margin: 0 auto;
+background: rgba(10,37,64,0.98);
+border-top: 1px solid var(–glass-border);
+border-radius: 28px 28px 0 0;
+padding: 24px 24px 100px;
+animation: slide-up 0.35s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.modal-close {
+float: right;
+background: var(–glass);
+border: none;
+color: var(–text-sub);
+border-radius: 50%;
+width: 32px; height: 32px;
+cursor: pointer;
+font-size: 1rem;
+display: flex; align-items: center; justify-content: center;
+}
+
+.timer-display {
+text-align: center;
+margin: 20px 0;
+}
+
+.timer-big {
+font-family: ‘Nunito’, sans-serif;
+font-weight: 900;
+font-size: 4rem;
+color: white;
+line-height: 1;
+}
+
+.timer-label { font-size: 0.8rem; color: var(–text-sub); margin-top: 4px; }
+
+.timer-controls {
+display: flex;
+gap: 12px;
+justify-content: center;
+margin-top: 20px;
+}
+
+.timer-btn {
+border: none;
+border-radius: 50%;
+width: 64px; height: 64px;
+font-size: 1.5rem;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.2s;
+}
+
+.timer-btn.play { background: linear-gradient(135deg, var(–blue-mid), var(–cyan)); }
+.timer-btn.stop { background: var(–glass); border: 1px solid var(–glass-border); }
+
+.timer-btn:active { transform: scale(0.9); }
+
+.exercise-steps {
+margin-top: 16px;
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+
+.ex-step {
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 10px 14px;
+background: var(–glass);
+border-radius: 12px;
+font-size: 0.8rem;
+}
+
+.ex-step-num {
+width: 24px; height: 24px;
+border-radius: 50%;
+background: var(–blue-mid);
+display: flex; align-items: center; justify-content: center;
+font-size: 0.7rem;
+font-weight: 700;
+flex-shrink: 0;
+}
+
+/* Scrollable pages */
+.page-scroll { overflow-y: auto; flex: 1; }
+.page-scroll::-webkit-scrollbar { display: none; }
+
+/* Water wave animation */
+@keyframes wave { 0%,100%{d:path(“M0,10 C20,20 40,0 60,10 C80,20 100,0 120,10 L120,40 L0,40Z”)} 50%{d:path(“M0,10 C20,0 40,20 60,10 C80,0 100,20 120,10 L120,40 L0,40Z”)} }
+
+.water-wave { animation: wave 3s ease-in-out infinite; }
+</style>
+
 </head>
-<body onkeydown="handleKeyboard(event)">
+<body>
+<div class="app">
 
-    <div id="lock-screen">
-        <div class="user-profile">
-            <div style="width: 80px; height: 80px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white; margin: 0 auto;">👤</div>
-            <div class="user-name">ohday sisomephone</div>
-            <p style="color: #888; font-size: 14px;">ກະລຸນາໃສ່ລະຫັດຜ່ານ 4 ຕົວ</p>
-        </div>
-        
-        <div class="passcode-dots" id="dots-container">
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-        </div>
+  <!-- TOP NAV -->
 
-        <div class="numpad">
-            <button class="num-btn" onclick="pressKey('1')">1</button>
-            <button class="num-btn" onclick="pressKey('2')">2</button>
-            <button class="num-btn" onclick="pressKey('3')">3</button>
-            <button class="num-btn" onclick="pressKey('4')">4</button>
-            <button class="num-btn" onclick="pressKey('5')">5</button>
-            <button class="num-btn" onclick="pressKey('6')">6</button>
-            <button class="num-btn" onclick="pressKey('7')">7</button>
-            <button class="num-btn" onclick="pressKey('8')">8</button>
-            <button class="num-btn" onclick="pressKey('9')">9</button>
-            <button class="num-btn clear" onclick="clearPass()">C</button>
-            <button class="num-btn" onclick="pressKey('0')">0</button>
-            <button class="num-btn" onclick="deleteLast()">⌫</button>
+  <nav>
+    <div class="nav-logo">H₂O<span>·HealthTrack</span></div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('th')">ไทย</button>
+      <button class="lang-btn" onclick="setLang('lo')">ລາວ</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+  </nav>
+
+  <!-- HOME PAGE -->
+
+  <div class="page active" id="page-home">
+    <div class="page-scroll">
+      <div class="home-header">
+        <div>
+          <div class="greeting" id="greeting-text">สวัสดีตอนเช้า! 🌅</div>
+          <div class="date-text" id="date-text"></div>
         </div>
+        <div class="weather-badge" id="weather-badge">
+          <span>🌡️</span>
+          <span>35°C · ร้อนมาก!</span>
+        </div>
+      </div>
+
+```
+  <!-- Cup Hero -->
+  <div class="cup-section">
+    <div class="cup-wrap" onclick="addWater(250)" title="กดเพื่อเพิ่มน้ำ 250ml">
+      <svg class="cup-svg" viewBox="0 0 160 220" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="cupClip">
+            <path d="M20,10 L140,10 L125,210 Q112,218 80,218 Q48,218 35,210 Z"/>
+          </clipPath>
+          <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#00D4FF" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#1A6CE8" stop-opacity="0.95"/>
+          </linearGradient>
+          <linearGradient id="cupGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.15)"/>
+            <stop offset="50%" stop-color="rgba(255,255,255,0.05)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0.12)"/>
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <!-- Cup body outline -->
+        <path d="M20,10 L140,10 L125,210 Q112,218 80,218 Q48,218 35,210 Z"
+              fill="rgba(255,255,255,0.05)"
+              stroke="rgba(0,212,255,0.4)"
+              stroke-width="2"
+              filter="url(#glow)"/>
+        <!-- Water fill -->
+        <g clip-path="url(#cupClip)">
+          <rect id="water-rect" x="0" y="170" width="160" height="220"
+                fill="url(#waterGrad)"
+                style="transition: y 0.8s cubic-bezier(.34,1.56,.64,1)"/>
+          <!-- Wave SVG -->
+          <svg id="wave-svg" x="-10" y="0" width="180" height="30" style="transition: y 0.8s cubic-bezier(.34,1.56,.64,1); position:relative;">
+            <path id="wave-path" d="M0,10 C20,20 40,0 60,10 C80,20 100,0 120,10 C140,20 160,0 180,10 L180,30 L0,30Z"
+                  fill="url(#waterGrad)" opacity="0.7">
+              <animate attributeName="d" 
+                values="M0,10 C20,20 40,0 60,10 C80,20 100,0 120,10 C140,20 160,0 180,10 L180,30 L0,30Z;
+                        M0,10 C20,0 40,20 60,10 C80,0 100,20 120,10 C140,0 160,20 180,10 L180,30 L0,30Z;
+                        M0,10 C20,20 40,0 60,10 C80,20 100,0 120,10 C140,20 160,0 180,10 L180,30 L0,30Z"
+                dur="3s" repeatCount="indefinite"/>
+            </path>
+          </svg>
+          <!-- Glass shine -->
+          <rect x="25" y="0" width="8" height="218" fill="rgba(255,255,255,0.08)" rx="4"/>
+        </g>
+        <!-- Tick marks -->
+        <line x1="128" y1="60" x2="140" y2="60" stroke="rgba(0,212,255,0.4)" stroke-width="1.5"/>
+        <line x1="128" y1="110" x2="140" y2="110" stroke="rgba(0,212,255,0.4)" stroke-width="1.5"/>
+        <line x1="129" y1="155" x2="140" y2="155" stroke="rgba(0,212,255,0.4)" stroke-width="1.5"/>
+        <text x="143" y="63" font-size="7" fill="rgba(0,212,255,0.6)" font-family="Nunito">75%</text>
+        <text x="143" y="113" font-size="7" fill="rgba(0,212,255,0.6)" font-family="Nunito">50%</text>
+        <text x="143" y="158" font-size="7" fill="rgba(0,212,255,0.6)" font-family="Nunito">25%</text>
+      </svg>
+      <div class="cup-percent" id="cup-percent">0%</div>
+    </div>
+    <div class="tap-hint" data-i18n="tap_hint">👆 กดแก้วเพื่อดื่มน้ำ 250ml</div>
+
+    <div class="water-stats">
+      <div class="stat-pill">
+        <div class="val" id="stat-drunk">0</div>
+        <div class="lbl" data-i18n="stat_drunk">ดื่มแล้ว (ml)</div>
+      </div>
+      <div class="stat-pill">
+        <div class="val" id="stat-remain" style="color:var(--orange)">0</div>
+        <div class="lbl" data-i18n="stat_remain">ยังขาด (ml)</div>
+      </div>
+      <div class="stat-pill">
+        <div class="val" id="stat-goal">2000</div>
+        <div class="lbl" data-i18n="stat_goal">เป้าหมาย (ml)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Add -->
+  <div class="quick-add-section">
+    <div class="section-title" data-i18n="quick_add">เพิ่มน้ำด่วน</div>
+    <div class="quick-btns">
+      <div class="quick-btn" onclick="addWater(150)">
+        <span class="icon">🥤</span>
+        <span class="ml">150</span>
+        <span class="cup-name" data-i18n="cup_small">แก้วเล็ก</span>
+      </div>
+      <div class="quick-btn" onclick="addWater(250)">
+        <span class="icon">🥛</span>
+        <span class="ml">250</span>
+        <span class="cup-name" data-i18n="cup_med">แก้วกลาง</span>
+      </div>
+      <div class="quick-btn" onclick="addWater(350)">
+        <span class="icon">🍶</span>
+        <span class="ml">350</span>
+        <span class="cup-name" data-i18n="cup_big">แก้วใหญ่</span>
+      </div>
+      <div class="quick-btn" onclick="addWater(500)">
+        <span class="icon">🍼</span>
+        <span class="ml">500</span>
+        <span class="cup-name" data-i18n="bottle">ขวด</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Motivation -->
+  <div class="motivation-card">
+    <div class="motiv-label" data-i18n="motiv_label">💬 แรงบันดาลใจวันนี้</div>
+    <div class="motiv-text" id="motivation-text"></div>
+  </div>
+
+  <!-- 7-day history -->
+  <div class="history-mini">
+    <div class="section-title" data-i18n="weekly">สัปดาห์นี้</div>
+    <div class="history-bars" id="history-bars"></div>
+  </div>
+
+  <div style="height:20px"></div>
+</div>
+```
+
+  </div>
+
+  <!-- EXERCISE PAGE -->
+
+  <div class="page" id="page-exercise">
+    <div class="page-scroll">
+      <div class="ex-header">
+        <div class="ex-title" data-i18n="ex_title">🏃 ออกกำลังกาย</div>
+        <div class="ex-subtitle" data-i18n="ex_subtitle">Quick Workout สำหรับคนเวลาน้อย</div>
+      </div>
+
+```
+  <!-- Step counter -->
+  <div class="step-counter-card">
+    <div class="step-ring">
+      <svg viewBox="0 0 90 90">
+        <circle cx="45" cy="45" r="38" fill="none" stroke="rgba(0,229,160,0.15)" stroke-width="7"/>
+        <circle id="step-circle" cx="45" cy="45" r="38" fill="none" stroke="#00E5A0" stroke-width="7"
+                stroke-linecap="round"
+                stroke-dasharray="239"
+                stroke-dashoffset="239"
+                style="transition: stroke-dashoffset 1s ease"/>
+      </svg>
+      <div class="step-ring-num">
+        <span class="num" id="step-count">0</span>
+        <span class="lbl" data-i18n="steps">ก้าว</span>
+      </div>
+    </div>
+    <div class="step-info">
+      <div class="big" data-i18n="pedometer">เครื่องนับก้าว</div>
+      <div class="sub" id="step-goal-text">เป้า: 6,000 ก้าว/วัน</div>
+      <div class="kcal" id="kcal-text">🔥 0 kcal เผาผลาญแล้ว</div>
+    </div>
+  </div>
+
+  <!-- Quick Workouts -->
+  <div class="quick-workout-section">
+    <div class="section-title" data-i18n="quick_workout">Quick Workout</div>
+    <div class="workout-cards" id="workout-cards"></div>
+  </div>
+
+  <div style="height:20px"></div>
+</div>
+```
+
+  </div>
+
+  <!-- VITAMIN PAGE -->
+
+  <div class="page" id="page-vitamin">
+    <div class="page-scroll">
+      <div class="vit-header">
+        <div class="vit-title" data-i18n="vit_title">💊 วิตามิน & อาหารเสริม</div>
+        <div class="vit-subtitle" data-i18n="vit_subtitle">คลังความรู้สุขภาพ</div>
+      </div>
+
+```
+  <div class="vit-search">
+    <span>🔍</span>
+    <input type="text" id="vit-search-input" placeholder="ค้นหาวิตามิน..." oninput="filterVitamins()">
+  </div>
+
+  <div class="vit-grid" id="vit-grid"></div>
+  <div style="height:20px"></div>
+</div>
+```
+
+  </div>
+
+  <!-- SETTINGS PAGE -->
+
+  <div class="page" id="page-settings">
+    <div class="page-scroll">
+      <div class="settings-header">
+        <div class="settings-title" data-i18n="settings_title">⚙️ ตั้งค่า</div>
+      </div>
+
+```
+  <div class="profile-card">
+    <div class="profile-avatar">🧑</div>
+    <div class="profile-name" id="profile-name-display">ผู้ใช้งาน</div>
+    <div class="profile-goal" id="profile-goal-display">เป้าหมาย: 2,000 ml/วัน</div>
+  </div>
+
+  <div class="settings-form">
+    <div class="form-group">
+      <label class="form-label" data-i18n="your_name">ชื่อของคุณ</label>
+      <input class="form-input" id="input-name" type="text" placeholder="ชื่อ">
+    </div>
+    <div class="form-group">
+      <label class="form-label" data-i18n="weight_label">น้ำหนัก (กก.)</label>
+      <input class="form-input" id="input-weight" type="number" placeholder="เช่น 65" oninput="calcGoal()">
+    </div>
+    <div class="form-group">
+      <label class="form-label" data-i18n="activity_label">ระดับกิจกรรม</label>
+      <select class="form-input" id="input-activity" onchange="calcGoal()">
+        <option value="1" data-i18n="act_low">น้อย (นั่งทำงานเป็นหลัก)</option>
+        <option value="1.2" data-i18n="act_med">ปานกลาง (ออกกำลังกายบ้าง)</option>
+        <option value="1.5" data-i18n="act_high">สูง (ออกกำลังกายหนัก)</option>
+      </select>
     </div>
 
-    <div id="table-screen" class="screen" style="display:none;">
-        <header class="main-header">
-            <div><h2 style="margin:0;">🏠 ຜັງໂຕ໊ະໃນຮ້ານ <span id="autosave-status">● Auto Saved</span></h2><span class="creator-name">By ohday sisomephone</span></div>
-            <div style="display:flex; gap:15px; align-items: center;">
-                <button onclick="openSettings()" title="ຕັ້ງຄ່າ" style="font-size:24px; background:none; border:none; cursor:pointer; color:var(--text);">⚙️</button>
-                <button onclick="removeTable()" style="font-size:24px; background:none; border:none; cursor:pointer; color:var(--danger);">➖</button>
-                <button onclick="addTable()" style="font-size:24px; background:none; border:none; cursor:pointer; color:var(--success);">➕</button>
-            </div>
-        </header>
-
-        <div class="nav-menu">
-            <button class="nav-item btn-save-data" onclick="saveDataToLocal()">💾 Data Save (Ctrl+S)</button>
-            <button class="nav-item" onclick="openReport()">📊 Report</button>
-            <button class="nav-item" onclick="openHistory()">🧾 History</button>
-            <button class="nav-item" onclick="lockApp()" style="margin-left: auto;">🔒 Lock</button>
-        </div>
-
-        <div class="table-grid" id="table-grid"></div>
+    <div class="calc-result">
+      <div class="res-label" data-i18n="recommended_water">💡 ปริมาณน้ำที่แนะนำต่อวัน</div>
+      <div class="res-value" id="calc-result-val">— ml</div>
     </div>
 
-    <div id="pos-screen" class="screen" style="display:none;">
-        <header class="main-header">
-            <button onclick="goHome()" style="padding:10px 15px; border-radius:12px; border:1px solid var(--border); background:var(--card); color:var(--text); cursor:pointer;">⬅ ກັບຄືນ (Esc)</button>
-            <h2 id="pos-title" style="margin:0;"></h2>
-            <div style="display:flex; gap:10px;">
-                <button onclick="openTransferModal()" style="padding:10px 15px; border-radius:12px; border:none; background:#673ab7; color:white; cursor:pointer; font-weight:bold;">🔄 ຍ້າຍໂຕ໊ະ</button>
-                <button onclick="toggleBooking()" id="booking-btn" style="padding:10px 15px; border-radius:12px; border:none; background:var(--booked); color:white; cursor:pointer; font-weight:bold;">💗 ຈອງໂຕ໊ະ</button>
-                <button onclick="openAddFood()" style="padding:10px 15px; border-radius:12px; border:none; background:var(--primary); color:white; cursor:pointer;">➕ ເເພີ່ມເມນູ</button>
-            </div>
-        </header>
-        <div class="nav-menu" id="pos-category-list"></div>
+    <button class="save-btn" onclick="saveSettings()" data-i18n="save_btn">💾 บันทึกข้อมูล</button>
+  </div>
 
-        <div class="pos-layout">
-            <div class="menu-container">
-                <div class="search-container">
-                    <input type="text" id="food-search" class="search-input" placeholder="🔍 ຄົ້ນຫາເມນູອາຫານ (F1)..." oninput="renderMenu()">
-                    <input type="number" id="menu-cols-input" class="col-input" value="6" min="1" max="10" title="ປັບຖັນ" oninput="updateMenuCols(this.value)">
-                </div>
-                <div class="menu-area" id="menu-area"></div>
-            </div>
-            <div class="cart-area">
-                <h3 style="margin:0 0 15px 0;">🛒 ລາຍການສັ່ງຊື້</h3>
-                <div id="cart-list"></div>
-                <div style="padding:15px; background:rgba(26, 115, 232, 0.1); border-radius:20px; border:1px solid var(--primary); text-align:right; margin-top: auto;">
-                    <small>ລວມທັງໝົດ</small>
-                    <h1 id="total-display" style="margin:0; color:var(--primary); font-size: 24px;">0 ₭</h1>
-                </div>
-                <button onclick="openPay()" style="width:100%; padding:15px; border-radius:20px; border:none; background:var(--primary); color:white; font-size:1.2rem; cursor:pointer; font-weight:bold; margin-top:10px;">💳 ເເຊັກບິນ</button>
-            </div>
-        </div>
+  <div style="height:30px"></div>
+</div>
+```
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="showPage('home', this)">
+      <div class="nav-icon">💧</div>
+      <div class="nav-label" data-i18n="nav_home">น้ำ</div>
     </div>
-
-    <div id="transfer-modal" class="modal-overlay">
-        <div class="modal-window">
-            <h2 style="text-align:center;">🔄 ຍ້າຍລາຍການໄປໂຕ໊ະອື່ນ</h2>
-            <p>ເລືອກໂຕ໊ະປາຍທາງ:</p>
-            <select id="transfer-select" style="width:100%; padding:15px; border-radius:15px; margin-bottom:20px; font-size:18px;"></select>
-            <button onclick="confirmTransfer()" style="width:100%; padding:15px; background:var(--success); color:white; border:none; border-radius:15px; font-weight:bold; cursor:pointer;">ຢືນຢັນການຍ້າຍ</button>
-            <button onclick="closeModals()" style="width:100%; padding:10px; background:none; border:none; color:#888; cursor:pointer; margin-top:10px;">ຍົກເລີກ</button>
-        </div>
+    <div class="nav-item" onclick="showPage('exercise', this)">
+      <div class="nav-icon">🏃</div>
+      <div class="nav-label" data-i18n="nav_ex">ออกกำลัง</div>
     </div>
-
-    <div id="report-modal" class="modal-overlay">
-        <div class="modal-window">
-            <h2 style="text-align:center;">📊 Dashboard Report</h2>
-            <div class="report-summary-grid">
-                <div class="report-box"><h4>ຍອດຂາຍມື້ນີ້</h4><p id="rpt-today">0 ₭</p></div>
-                <div class="report-box"><h4>ຍອດຂາຍທັງໝົດ</h4><p id="rpt-total">0 ₭</p></div>
-            </div>
-            <h3 style="color:var(--booked)">🔥 5 ເມນູຂາຍດີ (Top Menu)</h3>
-            <div id="rpt-top-menu" style="max-height: 250px; overflow-y: auto; margin-bottom:15px;"></div>
-            <button onclick="exportHistoryToExcel()" style="width:100%; padding:15px; background:var(--success); color:white; border:none; border-radius:15px; cursor:pointer; margin-bottom:10px; font-weight:bold;">📥 ດາວໂຫຼດລາຍງານ Excel</button>
-            <button onclick="closeModals()" style="width:100%; padding:15px; background:#555; color:white; border:none; border-radius:15px; cursor:pointer;">ປິດ (Esc)</button>
-        </div>
+    <div class="nav-item" onclick="showPage('vitamin', this)">
+      <div class="nav-icon">💊</div>
+      <div class="nav-label" data-i18n="nav_vit">วิตามิน</div>
     </div>
-
-    <div id="history-modal" class="modal-overlay">
-        <div class="modal-window" style="max-width: 600px;">
-            <h2 style="text-align:center;">🧾 History (ປະຫວັດການຂາຍ)</h2>
-            <div id="history-list" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;"></div>
-            <div style="display:flex; gap:10px;">
-                <button onclick="clearHistory()" style="flex:1; padding:15px; background:var(--danger); color:white; border:none; border-radius:15px; cursor:pointer;">ລ້າງປະຫວັດ</button>
-                <button onclick="closeModals()" style="flex:1; padding:15px; background:#555; color:white; border:none; border-radius:15px; cursor:pointer;">ປິດ</button>
-            </div>
-        </div>
+    <div class="nav-item" onclick="showPage('settings', this)">
+      <div class="nav-icon">⚙️</div>
+      <div class="nav-label" data-i18n="nav_set">ตั้งค่า</div>
     </div>
+  </div>
 
-    <div id="pay-modal" class="modal-overlay"><div class="modal-window">
-        <h2 style="text-align:center; margin-bottom:15px;">🧾 ຊຳລະເງິນ</h2>
-        <div class="pay-summary-box">
-            <span style="color:#888;">ຍອດລວມທີ່ຕ້ອງຈ່າຍ</span>
-            <div style="color:var(--danger); font-size:32px; font-weight:bold;"><span id="pay-total-val">0</span> ₭</div>
-            <div id="qr-auto-container">
-                <img id="qr-auto-img" src="" alt="QR Payment">
-                <p style="font-size:12px; color:#888; margin-top:5px;">Scan to Pay (Amount Auto)</p>
-            </div>
-        </div>
-        <div class="cash-input-wrapper"><input type="number" id="pay-input" class="input-pay-main" placeholder="0" oninput="calcChange()"><span class="cash-suffix">,000</span></div>
-        <div class="change-box"><b>ເງິນທອນ:</b><span id="change-display">0 ₭</span></div>
-        <button id="confirm-pay-btn" onclick="finalizePay()" disabled style="width:100%; padding:20px; border-radius:20px; border:none; background:var(--success); color:white; font-size:1.5rem; font-weight:bold; opacity:0.5; cursor:pointer;">✅ ຢືນຢັນ (Enter)</button>
-        <button onclick="closeModals()" style="width:100%; padding:10px; border:none; background:none; color:#888; cursor:pointer; margin-top:10px;">ຍົກເລີກ (Esc)</button>
-    </div></div>
+</div>
 
-    <div id="food-modal" class="modal-overlay"><div class="modal-window">
-        <h2 id="food-modal-title" style="margin-bottom:20px;">➕ ເພີ່ມເມນູອາຫານ</h2>
-        <input type="hidden" id="edit-food-id">
-        <input type="text" id="in-food-name" placeholder="ຊື່ລາຍການອາຫານ" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); box-sizing:border-box;">
-        <input type="number" id="in-food-price" placeholder="ລາຄາ (ກີບ)" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); box-sizing:border-box;">
-        <select id="in-food-category" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); box-sizing:border-box;">
-            <option value="ທັງໝົດ">ທັງໝົດ</option>
-            <option value="ອາຫານ">ອາຫານ</option>
-            <option value="ເຄື່ອງດື່ມ">ເຄື່ອງດື່ມ</option>
-            <option value="ຂອງຫວານ">ຂອງຫວານ</option>
-        </select>
-        <input type="hidden" id="in-food-img">
-        <label class="btn-upload" for="file-input" style="margin-bottom:15px;">📁 ເເລືອກຮູບອາຫານຈາກໃນເຄື່ອງ</label>
-        <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'food')">
-        <img id="food-img-preview" src="https://via.placeholder.com/150" style="width:100%; height:150px; object-fit:cover; border-radius:15px; margin-bottom:15px;">
-        <div style="display:flex; gap:10px; width:100%;">
-            <button id="btn-save-food" onclick="saveFood()" style="flex:2; padding:15px; background:var(--success); color:white; border:none; border-radius:15px; font-weight:bold; cursor:pointer;">✅ ບັນທຶກ</button>
-            <button onclick="closeModals()" style="flex:1; padding:15px; background:#555; color:white; border:none; border-radius:15px; cursor:pointer;">ຍົກເລີກ</button>
-        </div>
-    </div></div>
+<!-- Toast -->
 
-    <div id="settings-modal" class="modal-overlay">
-        <div class="modal-window" style="position: relative;">
-            <button onclick="closeModals()" class="btn-back-settings" title="ກັບຄືນ">⬅</button>
-            <div class="settings-content">
-                <h2 style="text-align: center; margin-bottom: 5px;">⚙️ ຕັ້ງຄ່າລະບົບ</h2>
-                <p style="text-align: center; color:#888; margin-bottom: 20px; font-size: 14px;">ປັບແຕ່ງການສະແດງຜົນ ແລະ ການພິມບິນ</p>
-                
-                <h3>🎨 ຮູບແບບການສະແດງຜົນ</h3>
-                <div class="settings-row">
-                    <span>Dark Mode (ໂໝດມືດ)</span>
-                    <label class="switch">
-                        <input type="checkbox" id="darkmode-toggle" onchange="toggleTheme()">
-                        <span class="slider"></span>
-                    </label>
-                </div>
+<div class="toast" id="toast"></div>
 
-                <h3>💾 ຄວາມປອດໄພຂໍ້ມູນ</h3>
-                <div class="settings-row">
-                    <span>Auto Save (1 ວິນາທີ)</span>
-                    <label class="switch">
-                        <input type="checkbox" id="autosave-toggle" onchange="toggleAutoSave()">
-                        <span class="slider"></span>
-                    </label>
-                </div>
+<!-- Workout Modal -->
 
-                <h3>🏢 ຮ້ານ & ການພິມບິນ</h3>
-                <div class="settings-row"><span>ໂລໂກຮ້ານ (Logo)</span><label class="btn-upload" for="logo-file-input">📁 ຮູບ</label><input type="file" id="logo-file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'logo')"></div>
-                <div class="settings-row"><span>QR ຮັບເງິນ (Payment)</span><label class="btn-upload" for="qr-file-input">💳 ຮູບ</label><input type="file" id="qr-file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'qr')"></div>
-                
-                <h3>🪑 ການສະແດງຜົນໂຕ໊ະ</h3>
-                <div class="settings-row"><span>ຈຳນວນຖັນ</span><input type="range" id="set-cols" min="1" max="10" value="5" oninput="init()"></div>
-                <div class="settings-row"><span>ຂະໜາດຕົວເລກ</span><input type="range" id="set-size" min="40" max="150" value="60" oninput="init()"></div>
-                
-                <h3>🖼️ ພື້ນຫຼັງ (Background)</h3>
-                <div class="settings-row"><label class="btn-upload" for="bg-file-input" style="width:100%; background:#6b7280;">🌆 ເລືອກຮູບພື້ນຫຼັງ</label><input type="file" id="bg-file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'bg')"></div>
-                <div class="settings-row"><span>ຄວາມເບີ (Blur)</span><input type="range" id="set-blur" min="0" max="20" value="0" oninput="applyBgSettings()"></div>
-                <div class="settings-row"><span>ຄວາມສະຫວ່າງ</span><input type="range" id="set-bright" min="0" max="150" value="100" oninput="applyBgSettings()"></div>
-                
-                <h3>🔒 ປ່ຽນລະຫັດຜ່ານ</h3>
-                <div style="background: var(--bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border);">
-                    <div style="margin-bottom: 10px;">
-                        <label style="font-size: 13px;">ລະຫັດເກົ່າ:</label>
-                        <input type="password" id="old-pass-input" class="pass-input" placeholder="****" maxlength="4">
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="font-size: 13px;">ລະຫັດໃໝ່ (4 ຕົວເລກ):</label>
-                        <input type="password" id="new-pass-input" class="pass-input" placeholder="****" maxlength="4">
-                    </div>
-                    <button onclick="changePasscode()" style="width:100%; padding:10px; background:var(--primary); color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">ຢືນຢັນການປ່ຽນ</button>
-                </div>
-
-                <div style="display:flex; gap:10px; margin-top:20px;">
-                    <button onclick="resetBackground()" style="flex:1; padding:12px; background:var(--danger); color:white; border:none; border-radius:15px; cursor:pointer;">ລ້າງພື້ນຫຼັງ</button>
-                    <button onclick="closeModals()" style="flex:1; padding:12px; background:var(--success); color:white; border:none; border-radius:15px; cursor:pointer;">ຕົກລົງ</button>
-                </div>
-            </div>
-        </div>
+<div class="workout-modal" id="workout-modal" onclick="closeWorkoutModal(event)">
+  <div class="workout-modal-inner">
+    <button class="modal-close" onclick="closeWorkoutModalDirect()">✕</button>
+    <div style="font-weight:700;font-size:1.1rem;margin-bottom:4px" id="modal-workout-name"></div>
+    <div style="font-size:0.78rem;color:var(--text-sub)" id="modal-workout-desc"></div>
+    <div class="timer-display">
+      <div class="timer-big" id="timer-display">5:00</div>
+      <div class="timer-label" data-i18n="timer_label">เวลาที่เหลือ</div>
     </div>
+    <div class="timer-controls">
+      <button class="timer-btn stop" onclick="resetTimer()">⏹</button>
+      <button class="timer-btn play" id="play-btn" onclick="toggleTimer()">▶</button>
+    </div>
+    <div class="exercise-steps" id="exercise-steps"></div>
+  </div>
+</div>
 
-    <div id="thank-you-popup">✅<h2>ຊຳລະເງິນສຳເລັດ</h2><p>ຂອບໃຈທີ່ອຸດໜູນ</p></div>
-    <div id="receipt-print"></div>
-    <footer class="main-footer">© 2026 ພັດທະນາໂດຍ: ohday sisomephone</footer>
+<script>
+// ===================== TRANSLATIONS =====================
+const i18n = {
+  th: {
+    greeting_morning: 'สวัสดีตอนเช้า! 🌅',
+    greeting_afternoon: 'สวัสดีตอนบ่าย! ☀️',
+    greeting_evening: 'สวัสดีตอนเย็น! 🌙',
+    tap_hint: '👆 กดแก้วเพื่อดื่มน้ำ 250ml',
+    stat_drunk: 'ดื่มแล้ว (ml)',
+    stat_remain: 'ยังขาด (ml)',
+    stat_goal: 'เป้าหมาย (ml)',
+    quick_add: 'เพิ่มน้ำด่วน',
+    cup_small: 'แก้วเล็ก',
+    cup_med: 'แก้วกลาง',
+    cup_big: 'แก้วใหญ่',
+    bottle: 'ขวด',
+    motiv_label: '💬 แรงบันดาลใจวันนี้',
+    weekly: 'สัปดาห์นี้',
+    ex_title: '🏃 ออกกำลังกาย',
+    ex_subtitle: 'Quick Workout สำหรับคนเวลาน้อย',
+    steps: 'ก้าว',
+    pedometer: 'เครื่องนับก้าว',
+    quick_workout: 'Quick Workout',
+    vit_title: '💊 วิตามิน & อาหารเสริม',
+    vit_subtitle: 'คลังความรู้สุขภาพ',
+    settings_title: '⚙️ ตั้งค่า',
+    your_name: 'ชื่อของคุณ',
+    weight_label: 'น้ำหนัก (กก.)',
+    activity_label: 'ระดับกิจกรรม',
+    act_low: 'น้อย (นั่งทำงานเป็นหลัก)',
+    act_med: 'ปานกลาง (ออกกำลังกายบ้าง)',
+    act_high: 'สูง (ออกกำลังกายหนัก)',
+    recommended_water: '💡 ปริมาณน้ำที่แนะนำต่อวัน',
+    save_btn: '💾 บันทึกข้อมูล',
+    nav_home: 'น้ำ',
+    nav_ex: 'ออกกำลัง',
+    nav_vit: 'วิตามิน',
+    nav_set: 'ตั้งค่า',
+    timer_label: 'เวลาที่เหลือ',
+    toast_added: (ml) => `✅ เพิ่ม ${ml}ml · รวม`,
+    toast_goal: '🎉 ถึงเป้าหมายแล้ว! ยอดเยี่ยม!',
+    toast_saved: '✅ บันทึกข้อมูลสำเร็จ!',
+    days: ['อา','จ','อ','พ','พฤ','ศ','ส'],
+    motivations: [
+      'ได้เวลาเติมความสดชื่นให้ร่างกายแล้ว! 💧',
+      'น้ำคือชีวิต ดื่มเพื่อสุขภาพที่ดีกว่า 🌊',
+      'อีกแค่ไม่กี่แก้วก็จะถึงเป้าหมายของวันนี้แล้วนะ! 🎯',
+      'ร่างกายของคุณดีใจทุกครั้งที่คุณดื่มน้ำ 🥰',
+      'วันนี้คุณทำได้ดีมาก! ดื่มน้ำต่อไปนะ 💪',
+    ],
+    weather_hot: '🌡️ 35°C · ร้อนมาก! ดื่มน้ำบ่อยขึ้น',
+    weather_normal: '🌤️ 28°C · อากาศดี',
+    step_goal: 'เป้า: 6,000 ก้าว/วัน',
+    kcal: (n) => `🔥 ${n} kcal เผาผลาญแล้ว`,
+    start: 'เริ่มเลย',
+  },
+  lo: {
+    greeting_morning: 'ສະບາຍດີຕອນເຊົ້າ! 🌅',
+    greeting_afternoon: 'ສະບາຍດີຕອນທ່ຽງ! ☀️',
+    greeting_evening: 'ສະບາຍດີຕອນແລງ! 🌙',
+    tap_hint: '👆 ກົດຈອກເພື່ອດື່ມນ້ຳ 250ml',
+    stat_drunk: 'ດື່ມແລ້ວ (ml)',
+    stat_remain: 'ຍັງຂາດ (ml)',
+    stat_goal: 'ເປົ້າໝາຍ (ml)',
+    quick_add: 'ເພີ່ມນ້ຳດ່ວນ',
+    cup_small: 'ຈອກນ້ອຍ',
+    cup_med: 'ຈອກກາງ',
+    cup_big: 'ຈອກໃຫຍ່',
+    bottle: 'ຂວດ',
+    motiv_label: '💬 ແຮງບັນດານໃຈ',
+    weekly: 'ອາທິດນີ້',
+    ex_title: '🏃 ອອກກຳລັງກາຍ',
+    ex_subtitle: 'Quick Workout ສຳລັບຄົນເວລານ້ອຍ',
+    steps: 'ກ້າວ',
+    pedometer: 'ເຄື່ອງນັບກ້າວ',
+    quick_workout: 'Quick Workout',
+    vit_title: '💊 ວິຕາມິນ & ອາຫານເສີມ',
+    vit_subtitle: 'ຄັງຄວາມຮູ້ສຸຂະພາບ',
+    settings_title: '⚙️ ຕັ້ງຄ່າ',
+    your_name: 'ຊື່ຂອງທ່ານ',
+    weight_label: 'ນ້ຳໜັກ (ກກ.)',
+    activity_label: 'ລະດັບກິດຈະກຳ',
+    act_low: 'ໜ້ອຍ (ນັ່ງເຮັດວຽກ)',
+    act_med: 'ປານກາງ',
+    act_high: 'ສູງ (ອອກກຳລັງຫຼາຍ)',
+    recommended_water: '💡 ປະລິມານນ້ຳທີ່ແນະນຳ/ວັນ',
+    save_btn: '💾 ບັນທຶກ',
+    nav_home: 'ນ້ຳ',
+    nav_ex: 'ອອກກຳລັງ',
+    nav_vit: 'ວິຕາມິນ',
+    nav_set: 'ຕັ້ງຄ່າ',
+    timer_label: 'ເວລາທີ່ເຫຼືອ',
+    toast_added: (ml) => `✅ ເພີ່ມ ${ml}ml · ລວມ`,
+    toast_goal: '🎉 ເຖິງເປົ້າໝາຍແລ້ວ!',
+    toast_saved: '✅ ບັນທຶກສຳເລັດ!',
+    days: ['ອາ','ຈ','ອ','ພ','ພຫ','ສ','ເສ'],
+    motivations: [
+      'ຮອດເວລາດື່ມນ້ຳແລ້ວ! 💧',
+      'ນ້ຳຄືຊີວິດ ດື່ມເພື່ອສຸຂະພາບ 🌊',
+      'ອີກໜ້ອຍດຽວກໍຮອດເປົ້າໝາຍແລ້ວ! 🎯',
+      'ຮ່າງກາຍດີໃຈທຸກຄັ້ງທີ່ດື່ມນ້ຳ 🥰',
+      'ມື້ນີ້ທ່ານເຮັດໄດ້ດີ! 💪',
+    ],
+    weather_hot: '🌡️ 35°C · ຮ້ອນຫຼາຍ! ດື່ມນ້ຳຫຼາຍຂຶ້ນ',
+    weather_normal: '🌤️ 28°C · ອາກາດດີ',
+    step_goal: 'ເປົ້າ: 6,000 ກ້າວ/ວັນ',
+    kcal: (n) => `🔥 ${n} kcal ເຜົາຜານ`,
+    start: 'ເລີ່ມ',
+  },
+  en: {
+    greeting_morning: 'Good morning! 🌅',
+    greeting_afternoon: 'Good afternoon! ☀️',
+    greeting_evening: 'Good evening! 🌙',
+    tap_hint: '👆 Tap the cup to drink 250ml',
+    stat_drunk: 'Drank (ml)',
+    stat_remain: 'Remaining (ml)',
+    stat_goal: 'Goal (ml)',
+    quick_add: 'Quick Add',
+    cup_small: 'Small',
+    cup_med: 'Medium',
+    cup_big: 'Large',
+    bottle: 'Bottle',
+    motiv_label: '💬 Motivation',
+    weekly: 'This Week',
+    ex_title: '🏃 Exercise',
+    ex_subtitle: 'Quick workouts for busy people',
+    steps: 'Steps',
+    pedometer: 'Step Counter',
+    quick_workout: 'Quick Workout',
+    vit_title: '💊 Vitamins & Supplements',
+    vit_subtitle: 'Health Knowledge Base',
+    settings_title: '⚙️ Settings',
+    your_name: 'Your Name',
+    weight_label: 'Weight (kg)',
+    activity_label: 'Activity Level',
+    act_low: 'Low (sedentary)',
+    act_med: 'Medium (some exercise)',
+    act_high: 'High (heavy exercise)',
+    recommended_water: '💡 Recommended daily water intake',
+    save_btn: '💾 Save',
+    nav_home: 'Water',
+    nav_ex: 'Exercise',
+    nav_vit: 'Vitamins',
+    nav_set: 'Settings',
+    timer_label: 'Time left',
+    toast_added: (ml) => `✅ Added ${ml}ml · Total`,
+    toast_goal: '🎉 Goal reached! Amazing!',
+    toast_saved: '✅ Settings saved!',
+    days: ['Su','Mo','Tu','We','Th','Fr','Sa'],
+    motivations: [
+      "Time to refresh your body! 💧",
+      "Water is life — drink up! 🌊",
+      "Just a few more sips to hit your goal! 🎯",
+      "Your body thanks you every sip 🥰",
+      "You're doing amazing today! Keep it up 💪",
+    ],
+    weather_hot: '🌡️ 35°C · Very hot! Drink more water',
+    weather_normal: '🌤️ 28°C · Nice weather',
+    step_goal: 'Goal: 6,000 steps/day',
+    kcal: (n) => `🔥 ${n} kcal burned`,
+    start: 'Start',
+  }
+};
 
-    <script>
-        // --- Passcode Logic ---
-        let currentPass = "";
-        let correctPass = "0000"; 
+// ===================== STATE =====================
+let state = {
+  lang: 'th',
+  drunk: 0,
+  goal: 2000,
+  weight: 0,
+  name: '',
+  history: [1400,1800,2200,1600,2000,1200,0],
+  steps: 0,
+  stepInterval: null,
+};
 
-        function pressKey(num) {
-            if (currentPass.length < 4) {
-                currentPass += num;
-                updateDots();
-                if (currentPass.length === 4) {
-                    setTimeout(checkPass, 200);
-                }
-            }
-        }
+// ===================== INIT =====================
+function init() {
+  const saved = localStorage.getItem('h2o_state');
+  if (saved) {
+    const s = JSON.parse(saved);
+    state = { ...state, ...s };
+    state.history = s.history || state.history;
+  }
+  // Reset today's drunk if new day
+  const today = new Date().toDateString();
+  if (state.lastDate !== today) {
+    // shift history
+    state.history = [...state.history.slice(1), 0];
+    state.drunk = 0;
+    state.lastDate = today;
+    saveState();
+  }
 
-        function updateDots() {
-            const dots = document.querySelectorAll('.dot');
-            dots.forEach((dot, index) => {
-                if (index < currentPass.length) dot.classList.add('active');
-                else dot.classList.remove('active');
-            });
-        }
+  updateDateTime();
+  updateHydration();
+  renderHistory();
+  renderMotivation();
+  renderWorkouts();
+  renderVitamins();
+  loadSettings();
+  updateLang();
+  simulateSteps();
+}
 
-        function deleteLast() {
-            currentPass = currentPass.slice(0, -1);
-            updateDots();
-        }
+function saveState() {
+  localStorage.setItem('h2o_state', JSON.stringify(state));
+}
 
-        function clearPass() {
-            currentPass = "";
-            updateDots();
-        }
+// ===================== DATETIME =====================
+function updateDateTime() {
+  const t = i18n[state.lang];
+  const now = new Date();
+  const h = now.getHours();
+  let greet = h < 12 ? t.greeting_morning : h < 18 ? t.greeting_afternoon : t.greeting_evening;
+  if (state.name) greet = greet.replace('!', `, ${state.name}!`);
+  document.getElementById('greeting-text').textContent = greet;
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('date-text').textContent = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+  
+  // Weather hint based on "hour" (simulated)
+  const wb = document.getElementById('weather-badge');
+  const isHot = h >= 10 && h <= 17;
+  wb.innerHTML = isHot 
+    ? `<span>🌡️</span><span>${state.lang==='lo'?'35°C · ຮ້ອນ':state.lang==='en'?'35°C · Hot!':'35°C · ร้อน!'}</span>`
+    : `<span>🌤️</span><span>${state.lang==='lo'?'28°C · ດີ':state.lang==='en'?'28°C · Nice':'28°C · ดี'}</span>`;
+  wb.style.color = isHot ? 'var(--orange)' : 'var(--green)';
+}
 
-        function checkPass() {
-            if (currentPass === correctPass) {
-                document.getElementById('lock-screen').style.display = 'none';
-                document.getElementById('table-screen').style.display = 'flex';
-                currentPass = "";
-                updateDots();
-            } else {
-                alert("ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ!");
-                clearPass();
-            }
-        }
+// ===================== HYDRATION =====================
+function updateHydration() {
+  const pct = Math.min(100, Math.round((state.drunk / state.goal) * 100));
+  const remain = Math.max(0, state.goal - state.drunk);
 
-        function changePasscode() {
-            const oldInput = document.getElementById('old-pass-input').value;
-            const newInput = document.getElementById('new-pass-input').value;
+  document.getElementById('cup-percent').textContent = pct + '%';
+  document.getElementById('stat-drunk').textContent = state.drunk;
+  document.getElementById('stat-remain').textContent = remain;
+  document.getElementById('stat-goal').textContent = state.goal;
 
-            if (oldInput !== correctPass) {
-                alert("❌ ລະຫັດຜ່ານເກົ່າບໍ່ຖືກຕ້ອງ!");
-                return;
-            }
+  // Water level: 0%=170 (bottom), 100%=10 (top) → y = 170 - (pct/100)*160
+  const y = Math.round(170 - (pct / 100) * 160);
+  document.getElementById('water-rect').setAttribute('y', y);
+  
+  // Update wave position
+  const waveY = Math.max(y - 15, -10);
+  const waveSvg = document.getElementById('wave-svg');
+  if (waveSvg) waveSvg.setAttribute('y', waveY);
+}
 
-            if (newInput.length !== 4 || isNaN(newInput)) {
-                alert("❌ ລະຫັດໃໝ່ຕ້ອງເປັນຕົວເລກ 4 ຕົວ!");
-                return;
-            }
+function addWater(ml) {
+  state.drunk = Math.min(state.goal, state.drunk + ml);
+  state.history[state.history.length - 1] = state.drunk;
+  updateHydration();
+  renderHistory();
+  saveState();
 
-            correctPass = newInput;
-            alert("✅ ປ່ຽນລະຫັດຜ່ານສຳເລັດແລ້ວ!");
-            document.getElementById('old-pass-input').value = "";
-            document.getElementById('new-pass-input').value = "";
-            saveDataToLocal(true);
-        }
+  const t = i18n[state.lang];
+  if (state.drunk >= state.goal) {
+    showToast(t.toast_goal, 3000);
+  } else {
+    showToast(t.toast_added(ml) + ` ${state.drunk}ml`);
+  }
+  // ripple
+  createRipple(event);
+}
 
-        function lockApp() {
-            document.getElementById('lock-screen').style.display = 'flex';
-            document.getElementById('table-screen').style.display = 'none';
-            document.getElementById('pos-screen').style.display = 'none';
-            clearPass();
-        }
+// ===================== HISTORY =====================
+function renderHistory() {
+  const container = document.getElementById('history-bars');
+  const t = i18n[state.lang];
+  const now = new Date();
+  container.innerHTML = '';
 
-        // --- Original System Logic ---
-        let tables = {}; let tableBooked = {}; let activeTbl = null; let tableCount = 12;
-        let isAutoSaveEnabled = true;
-        let saleHistory = [];
-        let currentCategory = "ທັງໝົດ";
-        let config = { logo: 'https://cdn-icons-png.flaticon.com/512/4080/4080032.png', qr: '', merchantId: 'PAY_ACCOUNT' };
-        
-        let menuData = [
-            { id: 1, name: 'ເບຍລາວ (ໃຫຍ່)', price: 25000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=200' },
-            { id: 2, name: 'ຕຳໝາກຫຸ່ງ', price: 20000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?w=200' },
-            { id: 3, name: 'ລາບໝູ', price: 45000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1547928576-a4a33237eceb?w=200' },
-            { id: 4, name: 'ແກງໜໍ່ໄມ້', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200' },
-            { id: 5, name: 'ປິ້ງໄກ່ນາ', price: 80000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=200' },
-            { id: 6, name: 'ນ້ຳດື່ມ (ນ້ອຍ)', price: 5000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=200' },
-            { id: 7, name: 'ນ້ຳອັດລົມ ກະປ໋ອງ', price: 10000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=200' },
-            { id: 8, name: 'ເຂົ້າຜັດໝູ', price: 30000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1512058560366-cd242d4285fe?w=200' },
-            { id: 9, name: 'ເຂົ້າຜັດທະເລ', price: 40000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=200' },
-            { id: 10, name: 'ເໝັ້ນຂົ້ວ', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=200' },
-            { id: 11, name: 'ຕົ້ມຍຳກຸ້ງ', price: 65000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?w=200' },
-            { id: 12, name: 'ຜັດກະເພົາໝູສັບ', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1632778149125-96c243652a25?w=200' },
-            { id: 13, name: 'ໄຂ່ຈຽວໝູສັບ', price: 25000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1510627489930-0c5459b41427?w=200' },
-            { id: 14, name: 'ແກງຈືດເຕົ້າຮູ້', price: 30000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200' },
-            { id: 15, name: 'ນ້ຳສົ້ມປັ່ນ', price: 15000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=200' },
-            { id: 16, name: 'ກາເຟເຢັນ', price: 18000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=200' },
-            { id: 17, name: 'ຊານົມມຸກ', price: 20000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1551046591-c39085038c3f?w=200' },
-            { id: 18, name: 'ໝາກໄມ້ລວມ', price: 30000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=200' },
-            { id: 19, name: 'ກະແລັມວານິລາ', price: 15000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1501443762214-6f91991c467e?w=200' },
-            { id: 20, name: 'ບົວລອຍໄຂ່ຫວານ', price: 20000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=200' },
-            { id: 21, name: 'ເຂົ້າໜຽວມ່ວງ', price: 35000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1621367044544-24e03f07a4c7?w=200' },
-            { id: 22, name: 'ຢຳວຸ້ນເສັ້ນ', price: 40000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200' },
-            { id: 23, name: 'ປາໜຶ້ງໝາກນາວ', price: 120000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1534604973900-c41ab4c5e636?w=200' },
-            { id: 24, name: 'ກຸ້ງແຊ່ນ້ຳປາ', price: 85000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1559740064-06f852ee815a?w=200' },
-            { id: 25, name: 'ຄໍໝູປິ້ງ', price: 45000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1529692236671-f1f6e9482172?w=200' },
-            { id: 26, name: 'ແໜມເນື່ອງ', price: 65000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1632778149125-96c243652a25?w=200' },
-            { id: 27, name: 'ເສັ້ນລ້ອນຂົ້ວ', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=200' },
-            { id: 28, name: 'ແກງໜໍ່ໄມ້ໃສ່ຜັກຂາ', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200' },
-            { id: 29, name: 'ເຜີເນື້ອ (ໃຫຍ່)', price: 40000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=200' },
-            { id: 30, name: 'ເຜີໝູ (ໃຫຍ່)', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=200' },
-            { id: 31, name: 'ເຂົ້າປຽກໄກ່', price: 30000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=200' },
-            { id: 32, name: 'ໝີ່ເຫຼືອງຂົ້ວ', price: 35000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=200' },
-            { id: 33, name: 'ຕຳຖາດ', price: 80000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?w=200' },
-            { id: 34, name: 'ຕຳໝາກແຕງ', price: 20000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?w=200' },
-            { id: 35, name: 'ຊຸບໜໍ່ໄມ້', price: 30000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200' },
-            { id: 36, name: 'ໄສ້ອົ່ວ', price: 45000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1529692236671-f1f6e9482172?w=200' },
-            { id: 37, name: 'ໝູແດດດຽວ', price: 45000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1529692236671-f1f6e9482172?w=200' },
-            { id: 38, name: 'ນ້ຳໝາກພ້າວ', price: 20000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1563223552-30d01fda3ead?w=200' },
-            { id: 39, name: 'ຊາມະນາວ', price: 15000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=200' },
-            { id: 40, name: 'ເບຍລາວ (ນ້ອຍ)', price: 15000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=200' },
-            { id: 41, name: 'ເບຍສິງ (ໃຫຍ່)', price: 30000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=200' },
-            { id: 42, name: 'ເຫຼົ້າຂາວ', price: 15000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=200' },
-            { id: 43, name: 'ໂຊດາ', price: 8000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=200' },
-            { id: 44, name: 'ນ້ຳກ້ອນ (ຖັງ)', price: 10000, category: 'ເຄື່ອງດື່ມ', img: 'https://images.unsplash.com/photo-1563223552-30d01fda3ead?w=200' },
-            { id: 45, name: 'ສັງຂະຍາມ່ວງ', price: 25000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=200' },
-            { id: 46, name: 'ລອດຊ່ອງ', price: 20000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=200' },
-            { id: 47, name: 'ໝາກໄມ້ຕາມລະດູການ', price: 25000, category: 'ຂອງຫວານ', img: 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=200' },
-            { id: 48, name: 'ເຂົ້າໜຽວຂາວ (ຕິບ)', price: 10000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200' },
-            { id: 49, name: 'ເຂົ້າຈ້າວ (ຖ້ວຍ)', price: 7000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1512058560366-cd242d4285fe?w=200' },
-            { id: 50, name: 'ຜັດຜັກບົ້ງໄຟແດງ', price: 30000, category: 'ອາຫານ', img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=200' }
-        ];
+  state.history.forEach((val, i) => {
+    const dayOffset = i - 6;
+    const d = new Date(now);
+    d.setDate(d.getDate() + dayOffset);
+    const dayName = t.days[d.getDay()];
+    const pct = Math.min(100, Math.round((val / state.goal) * 100));
+    const isToday = i === 6;
+    const hue = pct >= 100 ? 'var(--green)' : pct >= 60 ? 'var(--cyan)' : pct >= 30 ? 'var(--blue-light)' : 'rgba(255,255,255,0.15)';
 
-        // NEW: Function to update menu columns
-        function updateMenuCols(val) {
-            const cols = parseInt(val) || 3;
-            document.documentElement.style.setProperty('--menu-cols', cols);
-        }
+    container.innerHTML += `
+      <div class="hbar-wrap">
+        <div class="hbar" style="height:${Math.max(4, pct*0.5)}px;background:${isToday?'var(--cyan)':hue};${isToday?'box-shadow:0 0 10px var(--cyan-glow)':''}"></div>
+        <div class="hbar-day" style="${isToday?'color:var(--cyan);font-weight:700':''}">
+          ${dayName}
+        </div>
+      </div>`;
+  });
+}
 
-        function handleKeyboard(e) {
-            if (document.getElementById('lock-screen').style.display !== 'none') {
-                if (e.key >= '0' && e.key <= '9') pressKey(e.key);
-                if (e.key === 'Backspace') deleteLast();
-                if (e.key === 'Escape') clearPass();
-                return;
-            }
-            if (e.key === "Escape") { if (isModalOpen()) closeModals(); else if (document.getElementById('pos-screen').style.display === 'flex') goHome(); }
-            if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveDataToLocal(false); }
-            if (e.key === "F1") { e.preventDefault(); if (document.getElementById('table-screen').style.display !== 'none') { activeTbl = 1; openPOS(); } else { document.getElementById('food-search').focus(); } }
-            if(e.key==="Enter" && document.getElementById('pay-modal').style.display==='flex' && !document.getElementById('confirm-pay-btn').disabled) { finalizePay(); }
-        }
+// ===================== MOTIVATION =====================
+function renderMotivation() {
+  const motivs = i18n[state.lang].motivations;
+  const pct = Math.min(100, Math.round((state.drunk / state.goal) * 100));
+  let idx = Math.floor(pct / 25);
+  if (idx >= motivs.length) idx = motivs.length - 1;
+  document.getElementById('motivation-text').textContent = motivs[idx];
+}
 
-        function isModalOpen() { return Array.from(document.querySelectorAll('.modal-overlay')).some(m => m.style.display === 'flex'); }
+// ===================== WORKOUTS =====================
+const workoutsData = [
+  {
+    icon: '🧘', color: 'rgba(0,212,255,0.15)', borderColor: 'rgba(0,212,255,0.3)',
+    name: { th: 'สมาธิ & ยืดเส้น', lo: 'ສະມາທິ & ຍືດ', en: 'Stretch & Breathe' },
+    meta: { th: '5 นาที · ง่าย · ทุกระดับ', lo: '5 ນາທີ · ງ່າຍ', en: '5 min · Easy · All levels' },
+    duration: 300,
+    steps: [
+      { th: 'หายใจลึกๆ 10 ครั้ง', lo: 'ຫາຍໃຈເລິກ 10 ເທື່ອ', en: 'Deep breathing x10' },
+      { th: 'ยืดคอซ้าย-ขวา 30 วินาที', lo: 'ຍືດຄໍ 30 ວິ', en: 'Neck stretch 30 sec' },
+      { th: 'ยืดหลัง 1 นาที', lo: 'ຍືດຫຼັງ 1 ນາທີ', en: 'Back stretch 1 min' },
+      { th: 'ผ่อนคลาย ทำซ้ำ 2 รอบ', lo: 'ຜ່ອນຄາຍ x2', en: 'Relax, repeat x2' },
+    ]
+  },
+  {
+    icon: '💪', color: 'rgba(255,140,66,0.12)', borderColor: 'rgba(255,140,66,0.3)',
+    name: { th: 'กล้ามเนื้อแกนกลาง', lo: 'ກ້າມຊີ້ນ Core', en: 'Core Strength' },
+    meta: { th: '7 นาที · ปานกลาง', lo: '7 ນາທີ · ປານກາງ', en: '7 min · Medium' },
+    duration: 420,
+    steps: [
+      { th: 'วอร์มอัพ 1 นาที', lo: 'ອົ່ນໂຕ 1 ນາທີ', en: 'Warm-up 1 min' },
+      { th: 'Plank 30 วิ × 3 เซต', lo: 'Plank 30ວ x3', en: 'Plank 30s × 3 sets' },
+      { th: 'Crunch 15 ครั้ง × 3 เซต', lo: 'Crunch 15ເທື່ອ x3', en: 'Crunch 15 reps × 3' },
+      { th: 'Cool down 1 นาที', lo: 'Cool down 1 ນາທີ', en: 'Cool down 1 min' },
+    ]
+  },
+  {
+    icon: '🏃', color: 'rgba(0,229,160,0.12)', borderColor: 'rgba(0,229,160,0.3)',
+    name: { th: 'คาร์ดิโอในบ้าน', lo: 'Cardio ໃນເຮືອນ', en: 'Indoor Cardio' },
+    meta: { th: '10 นาที · หนักขึ้น', lo: '10 ນາທີ · ໜັກ', en: '10 min · Intense' },
+    duration: 600,
+    steps: [
+      { th: 'วิ่งอยู่กับที่ 2 นาที', lo: 'ແລ່ນຢູ່ກັບທີ່ 2 ນາທີ', en: 'High knees 2 min' },
+      { th: 'Jumping jack 2 นาที', lo: 'Jumping jack 2 ນາທີ', en: 'Jumping jacks 2 min' },
+      { th: 'Squat jump 1 นาที', lo: 'Squat jump 1 ນາທີ', en: 'Squat jumps 1 min' },
+      { th: 'ทำซ้ำ 2 รอบ + Cool down', lo: 'x2 + Cool down', en: 'Repeat x2 + Cool down' },
+    ]
+  },
+];
 
-        function renderCategoryMenus() {
-            const categories = ["ທັງໝົດ", "ອາຫານ", "ເຄື່ອງດື່ມ", "ຂອງຫວານ"];
-            const posList = document.getElementById('pos-category-list');
-            if(!posList) return;
-            posList.innerHTML = '';
-            categories.forEach(cat => {
-                const btn = document.createElement('button');
-                btn.className = `nav-item ${currentCategory === cat ? 'active' : ''}`;
-                btn.innerText = cat;
-                btn.onclick = () => { currentCategory = cat; renderCategoryMenus(); renderMenu(); };
-                posList.appendChild(btn);
-            });
-        }
+function renderWorkouts() {
+  const t = i18n[state.lang];
+  const container = document.getElementById('workout-cards');
+  container.innerHTML = workoutsData.map((w, i) => `
+    <div class="workout-card" onclick="openWorkout(${i})" style="border-color:${w.borderColor}">
+      <div class="workout-icon" style="background:${w.color}">${w.icon}</div>
+      <div class="workout-info">
+        <div class="workout-name">${w.name[state.lang]}</div>
+        <div class="workout-meta">${w.meta[state.lang]}</div>
+      </div>
+      <button class="workout-start-btn">${t.start} ▶</button>
+    </div>
+  `).join('');
+}
 
-        function openTransferModal() {
-            if (tables[activeTbl].length === 0) return alert("ບໍ່ມີລາຍການໃຫ້ຍ້າຍ!");
-            const sel = document.getElementById('transfer-select');
-            sel.innerHTML = '';
-            for(let i=1; i<=tableCount; i++) {
-                if(i !== activeTbl) {
-                    const opt = document.createElement('option');
-                    opt.value = i; opt.innerText = `ໂຕ໊ະ ${i} ${tables[i].length > 0 ? '(ບໍ່ວ່າງ)' : '(ວ່າງ)'}`;
-                    sel.appendChild(opt);
-                }
-            }
-            document.getElementById('transfer-modal').style.display = 'flex';
-        }
+// ===================== WORKOUT MODAL / TIMER =====================
+let timerSecs = 0, timerRunning = false, timerInterval = null, currentWorkout = null;
 
-        function confirmTransfer() {
-            const target = document.getElementById('transfer-select').value;
-            tables[target] = [...tables[target], ...tables[activeTbl]];
-            tables[activeTbl] = [];
-            tableBooked[target] = tableBooked[activeTbl];
-            tableBooked[activeTbl] = false;
-            alert(`ຍ້າຍລາຍການໄປ ໂຕ໊ະ ${target} ສຳເລັດ!`);
-            closeModals(); goHome();
-        }
+function openWorkout(idx) {
+  currentWorkout = workoutsData[idx];
+  timerSecs = currentWorkout.duration;
+  timerRunning = false;
+  clearInterval(timerInterval);
 
-        function exportHistoryToExcel() {
-            if (saleHistory.length === 0) return alert("ບໍ່ມີຂໍ້ມູນການຂາຍ!");
-            const excelData = saleHistory.flatMap(h => h.items.map(i => ({
-                "ວັນທີ": h.date, "ເວລາ": h.time, "ໂຕ໊ະ": h.table, "ລາຍການ": i.name, "ລາຄາ": i.price, "ຈຳນວນ": i.qty, "ລວມ": i.price * i.qty
-            })));
-            const ws = XLSX.utils.json_to_sheet(excelData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "SalesHistory");
-            XLSX.writeFile(wb, `POS_Report_${new Date().toLocaleDateString()}.xlsx`);
-        }
+  document.getElementById('modal-workout-name').textContent = currentWorkout.icon + ' ' + currentWorkout.name[state.lang];
+  document.getElementById('modal-workout-desc').textContent = currentWorkout.meta[state.lang];
+  document.getElementById('play-btn').textContent = '▶';
+  updateTimerDisplay();
 
-        function openReport() {
-            const today = new Date().toLocaleDateString();
-            let todayTotal = 0; let grandTotal = 0; let menuStats = {};
-            saleHistory.forEach(h => {
-                grandTotal += h.total; if (h.date === today) todayTotal += h.total;
-                h.items.forEach(item => { menuStats[item.name] = (menuStats[item.name] || 0) + item.qty; });
-            });
-            document.getElementById('rpt-today').innerText = todayTotal.toLocaleString() + " ₭";
-            document.getElementById('rpt-total').innerText = grandTotal.toLocaleString() + " ₭";
-            const topMenu = Object.entries(menuStats).sort((a, b) => b[1] - a[1]).slice(0, 5);
-            const rptList = document.getElementById('rpt-top-menu');
-            rptList.innerHTML = topMenu.length ? '' : '<p style="text-align:center; color:#888;">ຍັງບໍ່ມີຂໍ້ມູນການຂາຍ</p>';
-            topMenu.forEach(([name, qty]) => { rptList.innerHTML += `<div class="top-menu-item"><span>${name}</span><b>x${qty}</b></div>`; });
-            document.getElementById('report-modal').style.display = 'flex';
-        }
+  const steps = currentWorkout.steps;
+  document.getElementById('exercise-steps').innerHTML = steps.map((s, i) => `
+    <div class="ex-step">
+      <div class="ex-step-num">${i + 1}</div>
+      <div>${s[state.lang]}</div>
+    </div>
+  `).join('');
 
-        function handleFileSelect(event, type) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const res = e.target.result;
-                    if (type === 'logo') config.logo = res;
-                    else if (type === 'qr') config.qr = res;
-                    else if (type === 'food') { document.getElementById('in-food-img').value = res; document.getElementById('food-img-preview').src = res; }
-                    else if (type === 'bg') { document.documentElement.style.setProperty('--bg-img', `url(${res})`); }
-                };
-                reader.readAsDataURL(file);
-            }
-        }
+  document.getElementById('workout-modal').classList.add('open');
+}
 
-        function saveDataToLocal(isAuto = false) {
-            if(isAuto && !isAutoSaveEnabled) return;
-            const data = { 
-                tables, tableBooked, tableCount, menuData, config, isAutoSaveEnabled, saleHistory,
-                correctPass,
-                theme: document.body.hasAttribute('data-theme') ? 'dark' : 'light',
-                bgSettings: { img: getComputedStyle(document.documentElement).getPropertyValue('--bg-img'), blur: document.getElementById('set-blur').value, bright: document.getElementById('set-bright').value }
-            };
-            localStorage.setItem('pos_ohday_data', JSON.stringify(data));
-            if(isAuto) { const status = document.getElementById('autosave-status'); status.style.opacity = "1"; setTimeout(() => { status.style.opacity = "0"; }, 2000); }
-        }
+function closeWorkoutModal(e) {
+  if (e.target === document.getElementById('workout-modal')) closeWorkoutModalDirect();
+}
 
-        setInterval(() => { saveDataToLocal(true); }, 1000);
-        function toggleAutoSave() { isAutoSaveEnabled = document.getElementById('autosave-toggle').checked; saveDataToLocal(false); }
+function closeWorkoutModalDirect() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  document.getElementById('workout-modal').classList.remove('open');
+}
 
-        function loadDataFromLocal() {
-            const saved = localStorage.getItem('pos_ohday_data');
-            if (saved) {
-                const p = JSON.parse(saved);
-                tables = p.tables || {}; tableBooked = p.tableBooked || {}; tableCount = p.tableCount || 12;
-                menuData = p.menuData || menuData; config = p.config || config; saleHistory = p.saleHistory || [];
-                correctPass = p.correctPass || "0000";
-                isAutoSaveEnabled = p.isAutoSaveEnabled !== undefined ? p.isAutoSaveEnabled : true;
-                document.getElementById('autosave-toggle').checked = isAutoSaveEnabled;
-                if(p.theme === 'dark') { document.body.setAttribute('data-theme', 'dark'); document.getElementById('darkmode-toggle').checked = true; }
-                if(p.bgSettings) {
-                    document.documentElement.style.setProperty('--bg-img', p.bgSettings.img);
-                    document.getElementById('set-blur').value = p.bgSettings.blur;
-                    document.getElementById('set-bright').value = p.bgSettings.bright;
-                    applyBgSettings();
-                }
-            }
-            init();
-        }
+function toggleTimer() {
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    document.getElementById('play-btn').textContent = '▶';
+  } else {
+    timerRunning = true;
+    document.getElementById('play-btn').textContent = '⏸';
+    timerInterval = setInterval(() => {
+      timerSecs--;
+      updateTimerDisplay();
+      if (timerSecs <= 0) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        document.getElementById('play-btn').textContent = '▶';
+        showToast('🎉 ' + (state.lang === 'en' ? 'Workout done!' : state.lang === 'lo' ? 'ສຳເລັດ!' : 'ออกกำลังกายเสร็จแล้ว!'));
+      }
+    }, 1000);
+  }
+}
 
-        function applyBgSettings() {
-            const blur = document.getElementById('set-blur').value + 'px';
-            const bright = document.getElementById('set-bright').value + '%';
-            document.documentElement.style.setProperty('--bg-blur', blur);
-            document.documentElement.style.setProperty('--bg-brightness', bright);
-        }
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerSecs = currentWorkout ? currentWorkout.duration : 300;
+  document.getElementById('play-btn').textContent = '▶';
+  updateTimerDisplay();
+}
 
-        function resetBackground() {
-            document.documentElement.style.setProperty('--bg-img', 'none');
-            document.getElementById('set-blur').value = 0; document.getElementById('set-bright').value = 100;
-            applyBgSettings();
-        }
+function updateTimerDisplay() {
+  const m = Math.floor(timerSecs / 60);
+  const s = timerSecs % 60;
+  document.getElementById('timer-display').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+}
 
-        function init() {
-            const grid = document.getElementById('table-grid');
-            if(!grid) return;
-            const cols = document.getElementById('set-cols').value;
-            const size = document.getElementById('set-size').value;
-            grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-            if(window.innerWidth <= 850) { grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(100px, 1fr))`; }
+// ===================== VITAMINS =====================
+const vitaminsData = [
+  {
+    icon: '🌞', bg: 'rgba(255,200,0,0.15)', color: '#FFD700',
+    name: { th: 'วิตามิน D', lo: 'ວິຕາມິນ D', en: 'Vitamin D' },
+    alias: { th: 'วิตามินแสงแดด', lo: 'ວິຕາມິນແສງຕາເວັນ', en: 'The Sunshine Vitamin' },
+    rows: [
+      { key: { th: 'ประโยชน์', lo: 'ປະໂຫຍດ', en: 'Benefits' }, value: { th: 'กระดูกแข็งแรง, ภูมิคุ้มกัน, อารมณ์ดี', lo: 'ກະດູກແຂງ, ພູມຕ້ານທານ', en: 'Strong bones, immunity, mood' } },
+      { key: { th: 'ปริมาณแนะนำ', lo: 'ປະລິມານ', en: 'Dosage' }, value: { th: '1,000–2,000 IU/วัน', lo: '1,000–2,000 IU/ວັນ', en: '1,000–2,000 IU/day' } },
+      { key: { th: 'แหล่งอาหาร', lo: 'ແຫຼ່ງອາຫານ', en: 'Sources' }, value: { th: 'แสงแดด, ปลาแซลมอน, ไข่', lo: 'ແສງຕາເວັນ, ປາ, ໄຂ່', en: 'Sunlight, salmon, eggs' } },
+    ]
+  },
+  {
+    icon: '🍊', bg: 'rgba(255,140,66,0.15)', color: '#FF8C42',
+    name: { th: 'วิตามิน C', lo: 'ວິຕາມິນ C', en: 'Vitamin C' },
+    alias: { th: 'ภูมิคุ้มกันชั้นดี', lo: 'ພູມຕ້ານທານ', en: 'Immunity Booster' },
+    rows: [
+      { key: { th: 'ประโยชน์', lo: 'ປະໂຫຍດ', en: 'Benefits' }, value: { th: 'ต้านอนุมูลอิสระ, ผิวสวย, ไข้หวัด', lo: 'ຕ້ານໄຂ້ຫວັດ, ຜິວສວຍ', en: 'Antioxidant, skin health, cold prevention' } },
+      { key: { th: 'ปริมาณแนะนำ', lo: 'ປະລິມານ', en: 'Dosage' }, value: { th: '500–1,000 mg/วัน', lo: '500–1,000 mg/ວັນ', en: '500–1,000 mg/day' } },
+      { key: { th: 'แหล่งอาหาร', lo: 'ແຫຼ່ງອາຫານ', en: 'Sources' }, value: { th: 'ส้ม, มะนาว, ฝรั่ง, บล็อคโคลี่', lo: 'ສົ້ມ, ມະນາວ', en: 'Oranges, lemon, guava, broccoli' } },
+    ]
+  },
+  {
+    icon: '🥩', bg: 'rgba(255,100,100,0.15)', color: '#FF6464',
+    name: { th: 'วิตามิน B12', lo: 'ວິຕາມິນ B12', en: 'Vitamin B12' },
+    alias: { th: 'พลังงานและสมอง', lo: 'ພະລັງງານ & ສະໝອງ', en: 'Energy & Brain Power' },
+    rows: [
+      { key: { th: 'ประโยชน์', lo: 'ປະໂຫຍດ', en: 'Benefits' }, value: { th: 'พลังงาน, ระบบประสาท, เม็ดเลือด', lo: 'ພະລັງງານ, ລະບົບປະສາດ', en: 'Energy, nervous system, blood cells' } },
+      { key: { th: 'ปริมาณแนะนำ', lo: 'ປະລິມານ', en: 'Dosage' }, value: { th: '2.4 mcg/วัน', lo: '2.4 mcg/ວັນ', en: '2.4 mcg/day' } },
+      { key: { th: 'แหล่งอาหาร', lo: 'ແຫຼ່ງອາຫານ', en: 'Sources' }, value: { th: 'เนื้อสัตว์, ไข่, นม, ปลา', lo: 'ຊີ້ນ, ໄຂ່, ນົມ', en: 'Meat, eggs, dairy, fish' } },
+    ]
+  },
+  {
+    icon: '🧲', bg: 'rgba(180,100,255,0.15)', color: '#C878FF',
+    name: { th: 'แมกนีเซียม', lo: 'ແມກນີຊຽມ', en: 'Magnesium' },
+    alias: { th: 'ลดความเครียด', lo: 'ຫຼຸດຄວາມຄຽດ', en: 'Stress Reducer' },
+    rows: [
+      { key: { th: 'ประโยชน์', lo: 'ປະໂຫຍດ', en: 'Benefits' }, value: { th: 'กล้ามเนื้อ, นอนหลับดี, ลด stress', lo: 'ກ້າມຊີ້ນ, ນອນດີ', en: 'Muscles, sleep quality, stress relief' } },
+      { key: { th: 'ปริมาณแนะนำ', lo: 'ປະລິມານ', en: 'Dosage' }, value: { th: '310–420 mg/วัน', lo: '310–420 mg/ວັນ', en: '310–420 mg/day' } },
+      { key: { th: 'แหล่งอาหาร', lo: 'ແຫຼ່ງອາຫານ', en: 'Sources' }, value: { th: 'อัลมอนด์, ผักใบเขียว, ดาร์กช็อกโกแลต', lo: 'ຖົ່ວ, ຜັກຂຽວ', en: 'Almonds, leafy greens, dark chocolate' } },
+    ]
+  },
+  {
+    icon: '🐟', bg: 'rgba(0,180,255,0.15)', color: '#00B4FF',
+    name: { th: 'โอเมก้า-3', lo: 'ໂອເມກ້າ-3', en: 'Omega-3' },
+    alias: { th: 'หัวใจและสมองดี', lo: 'ຫົວໃຈ & ສະໝອງ', en: 'Heart & Brain Health' },
+    rows: [
+      { key: { th: 'ประโยชน์', lo: 'ປະໂຫຍດ', en: 'Benefits' }, value: { th: 'หัวใจ, สมอง, ลดอักเสบ', lo: 'ຫົວໃຈ, ສະໝອງ', en: 'Heart, brain, anti-inflammation' } },
+      { key: { th: 'ปริมาณแนะนำ', lo: 'ປະລິມານ', en: 'Dosage' }, value: { th: '1,000–2,000 mg/วัน', lo: '1,000–2,000 mg/ວັນ', en: '1,000–2,000 mg/day' } },
+      { key: { th: 'แหล่งอาหาร', lo: 'ແຫຼ່ງອາຫານ', en: 'Sources' }, value: { th: 'ปลาแซลมอน, ปลาทูน่า, เมล็ดเชีย', lo: 'ປາ, ເມັດ chia', en: 'Salmon, tuna, chia seeds' } },
+    ]
+  },
+];
 
-            grid.innerHTML = '';
-            for(let i=1; i<=tableCount; i++) {
-                if(!tables[i]) tables[i] = [];
-                const busy = tables[i].length > 0; 
-                const booked = tableBooked[i] === true;
-                const btn = document.createElement('button');
-                btn.className = `table-btn ${busy ? 'active' : (booked ? 'booked' : '')}`;
-                let statusText = busy ? "ບໍ່ວ່າງ" : (booked ? "ຈອງແລ້ວ" : "ວ່າງ");
-                btn.innerHTML = `<span style="font-size: 12px; opacity: 0.8;">ໂຕ໊ະ</span><span style="font-size: ${size/2}px; font-weight: 900; line-height: 1;">${i}</span><span style="font-size: 11px; margin-top: 5px;">${statusText}</span>`;
-                btn.onclick = () => { activeTbl = i; openPOS(); };
-                grid.appendChild(btn);
-            }
-        }
+let filteredVitamins = [...vitaminsData];
 
-        function openPOS() {
-            document.getElementById('table-screen').style.display = 'none';
-            document.getElementById('pos-screen').style.display = 'flex';
-            document.getElementById('pos-title').innerText = `ໂຕ໊ະ ${activeTbl}`;
-            updateBookingBtn(); 
-            renderCategoryMenus(); 
-            renderMenu(); 
-            renderCart();
-            updateMenuCols(document.getElementById('menu-cols-input').value);
-        }
+function renderVitamins() {
+  const grid = document.getElementById('vit-grid');
+  grid.innerHTML = filteredVitamins.map((v, i) => `
+    <div class="vit-card" id="vit-${i}">
+      <div class="vit-card-head" onclick="toggleVit(${i})">
+        <div class="vit-icon" style="background:${v.bg};color:${v.color}">${v.icon}</div>
+        <div>
+          <div class="vit-name">${v.name[state.lang]}</div>
+          <div class="vit-alias">${v.alias[state.lang]}</div>
+        </div>
+        <div class="vit-expand">▼</div>
+      </div>
+      <div class="vit-body">
+        <div class="vit-body-inner">
+          ${v.rows.map(r => `
+            <div class="vit-row">
+              <span class="key">${r.key[state.lang]}</span>
+              <span class="value">${r.value[state.lang]}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
 
-        function toggleBooking() { tableBooked[activeTbl] = !tableBooked[activeTbl]; updateBookingBtn(); saveDataToLocal(true); }
-        function updateBookingBtn() {
-            const btn = document.getElementById('booking-btn');
-            if(tableBooked[activeTbl]) { btn.innerText = "✖ ຍົກເລີກການຈອງ"; btn.style.background = "#555"; }
-            else { btn.innerText = "💗 ຈອງໂຕ໊ະ"; btn.style.background = "var(--booked)"; }
-        }
+function toggleVit(i) {
+  const card = document.getElementById(`vit-${i}`);
+  card.classList.toggle('open');
+}
 
-        function renderMenu() {
-            const area = document.getElementById('menu-area');
-            const search = document.getElementById('food-search').value.toLowerCase();
-            area.innerHTML = '';
-            menuData.filter(m => {
-                const matchSearch = m.name.toLowerCase().includes(search);
-                const matchCat = currentCategory === "ທັງໝົດ" || m.category === currentCategory;
-                return matchSearch && matchCat;
-            }).forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'food-card';
-                card.innerHTML = `<div class="food-actions"><button class="action-btn" style="background:#fbbc04" onclick="openEditFood(event, ${item.id})">✏️</button><button class="action-btn del-food-btn" onclick="deleteMenuItem(event, ${item.id})">×</button></div><img src="${item.img}" class="food-img" onerror="this.src='https://via.placeholder.com/150'"><div class="food-info"><b>${item.name}</b><br><span style="color:var(--primary); font-weight:900;">${item.price.toLocaleString()} ₭</span></div>`;
-                card.onclick = () => {
-                    const found = tables[activeTbl].find(f => f.id === item.id);
-                    if(found) found.qty++; else tables[activeTbl].push({...item, qty:1});
-                    if(tableBooked[activeTbl]) { tableBooked[activeTbl] = false; updateBookingBtn(); }
-                    renderCart();
-                };
-                area.appendChild(card);
-            });
-        }
+function filterVitamins() {
+  const q = document.getElementById('vit-search-input').value.toLowerCase();
+  filteredVitamins = vitaminsData.filter(v => 
+    v.name[state.lang].toLowerCase().includes(q) ||
+    v.alias[state.lang].toLowerCase().includes(q)
+  );
+  renderVitamins();
+}
 
-        function renderCart() {
-            const list = document.getElementById('cart-list'); list.innerHTML = '';
-            let total = 0;
-            tables[activeTbl].forEach(item => {
-                let lineTotal = item.price * item.qty; total += lineTotal;
-                list.innerHTML += `<div class="cart-item"><div style="display:flex; justify-content:space-between;"><b>${item.name}</b><span>${lineTotal.toLocaleString()} ₭</span></div><div style="display:flex; align-items:center; gap:10px; margin-top:5px;"><button onclick="updateQty(${item.id}, -1)">-</button><span>${item.qty}</span><button onclick="updateQty(${item.id}, 1)">+</button><button onclick="removeItem(${item.id})" style="margin-left:auto; color:red; border:none; background:none; cursor:pointer;">🗑</button></div></div>`;
-            });
-            document.getElementById('total-display').innerText = total.toLocaleString() + " ₭";
-        }
+// ===================== SETTINGS =====================
+function calcGoal() {
+  const w = parseFloat(document.getElementById('input-weight').value) || 0;
+  const act = parseFloat(document.getElementById('input-activity').value) || 1;
+  if (w > 0) {
+    // Formula: weight(kg) × 2.2 × 30 / 2 × activity_factor
+    const ml = Math.round(w * 2.2 * 30 / 2 * act / 100) * 100;
+    document.getElementById('calc-result-val').textContent = `${ml} ml`;
+    state._calcGoal = ml;
+  } else {
+    document.getElementById('calc-result-val').textContent = '— ml';
+    state._calcGoal = 0;
+  }
+}
 
-        function updateQty(id, delta) {
-            const item = tables[activeTbl].find(i => i.id === id);
-            if(item) { item.qty += delta; if(item.qty <= 0) removeItem(id); }
-            renderCart();
-        }
-        function removeItem(id) { tables[activeTbl] = tables[activeTbl].filter(i => i.id !== id); renderCart(); }
+function loadSettings() {
+  if (state.name) document.getElementById('input-name').value = state.name;
+  if (state.weight) document.getElementById('input-weight').value = state.weight;
+  document.getElementById('profile-name-display').textContent = state.name || (state.lang === 'en' ? 'User' : state.lang === 'lo' ? 'ຜູ້ໃຊ້' : 'ผู้ใช้งาน');
+  document.getElementById('profile-goal-display').textContent = (state.lang === 'en' ? 'Goal: ' : state.lang === 'lo' ? 'ເປົ້າ: ' : 'เป้าหมาย: ') + state.goal + ' ml/วัน';
+  calcGoal();
+}
 
-        function openPay() {
-            let total = tables[activeTbl].reduce((a,b)=>a+(b.price*b.qty), 0);
-            if(total <= 0) return;
-            document.getElementById('pay-modal').style.display='flex';
-            document.getElementById('pay-total-val').innerText = total.toLocaleString();
-            document.getElementById('pay-input').value = '';
-            const qrImg = document.getElementById('qr-auto-img');
-            const qrData = `bcelone://pay?merchantId=${config.merchantId}&amount=${total}&description=Table${activeTbl}`;
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
-            calcChange();
-        }
+function saveSettings() {
+  state.name = document.getElementById('input-name').value;
+  state.weight = parseFloat(document.getElementById('input-weight').value) || 0;
+  if (state._calcGoal > 0) state.goal = state._calcGoal;
+  saveState();
+  loadSettings();
+  updateDateTime();
+  updateHydration();
+  showToast(i18n[state.lang].toast_saved);
+}
 
-        function calcChange() {
-            let total = tables[activeTbl].reduce((a,b)=>a+(b.price*b.qty), 0);
-            let inputVal = document.getElementById('pay-input').value;
-            let cash = (parseFloat(inputVal) || 0) * 1000;
-            let change = cash - total;
-            const btn = document.getElementById('confirm-pay-btn');
-            const display = document.getElementById('change-display');
-            if(inputVal !== "" && change >= 0) { display.innerText = change.toLocaleString() + " ₭"; btn.disabled = false; btn.style.opacity = 1; }
-            else { display.innerText = (inputVal === "" ? "0" : "ຂາດ " + Math.abs(change).toLocaleString()) + " ₭"; btn.disabled = true; btn.style.opacity = 0.5; }
-        }
+// ===================== STEPS (Simulated) =====================
+function simulateSteps() {
+  // Simulate step counting (in real app, use DeviceMotionEvent)
+  setInterval(() => {
+    if (Math.random() > 0.7) {
+      state.steps = Math.min(6000, state.steps + Math.floor(Math.random() * 3) + 1);
+      updateStepUI();
+    }
+  }, 2000);
+}
 
-        function finalizePay() {
-            const now = new Date();
-            const orderNo = "ORD-" + Math.floor(1000 + Math.random() * 9000);
-            let total = tables[activeTbl].reduce((a,b)=>a+(b.price*b.qty), 0);
-            let cash = (parseFloat(document.getElementById('pay-input').value) || 0) * 1000;
-            
-            saleHistory.unshift({ 
-                date: now.toLocaleDateString(), 
-                time: now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0'), 
-                table: activeTbl, total: total, items: JSON.parse(JSON.stringify(tables[activeTbl])) 
-            });
-            
-            const receiptArea = document.getElementById('receipt-print');
-            let rowsHtml = tables[activeTbl].map((i, idx) => `
-                <tr>
-                    <td>${idx + 1}</td>
-                    <td>${i.name}</td>
-                    <td>${i.qty}</td>
-                    <td>${i.price.toLocaleString()}</td>
-                    <td style="text-align:right">${(i.price*i.qty).toLocaleString()}</td>
-                </tr>
-            `).join('');
+function updateStepUI() {
+  document.getElementById('step-count').textContent = state.steps.toLocaleString();
+  const pct = Math.min(1, state.steps / 6000);
+  const circumference = 239;
+  document.getElementById('step-circle').setAttribute('stroke-dashoffset', circumference * (1 - pct));
+  const kcal = Math.round(state.steps * 0.04);
+  document.getElementById('kcal-text').textContent = i18n[state.lang].kcal(kcal);
+}
 
-            receiptArea.innerHTML = `
-                <div class="receipt-header">
-                    <img src="${config.logo}" class="receipt-logo" onerror="this.style.display='none'">
-                    <div style="font-size:14px; font-weight:bold;">ໃບບິນຮັບເງິນ / Receipt</div>
-                    <div style="margin-top:5px;">ເລກທີ / No: ${orderNo}</div>
-                    <div>ເວລາສິ້ນສຸດ / End Time: ${now.toLocaleTimeString()}</div>
-                    <div style="font-weight:bold;">ໂຕ໊ະ / Table: ${activeTbl}</div>
-                </div>
-                <div class="receipt-line"></div>
-                <table class="receipt-table">
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Item</th>
-                            <th>Qty</th>
-                            <th>Price</th>
-                            <th style="text-align:right">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>${rowsHtml}</tbody>
-                </table>
-                <div class="receipt-line"></div>
-                <div class="receipt-row"><b>ລວມທັງໝົດ / Total:</b><b>${total.toLocaleString()} ₭</b></div>
-                <div class="receipt-row"><span>ຮັບເງິນ / Cash:</span><span>${cash.toLocaleString()}</span></div>
-                <div class="receipt-row"><span>ເງິນທອນ / Change:</span><span>${(cash - total).toLocaleString()}</span></div>
-                <div style="text-align:center; margin-top:10px;">
-                    ${config.qr ? `<img src="${config.qr}" class="qr-payment">` : ''}
-                </div>
-                <div class="receipt-footer">
-                    <p>ກະລຸນາຊຳລະເງິນທີ່ເຄົາເຕີ<br>Please pay at the counter</p>
-                    <p><b>ຂໍຂອບໃຈ / Thank You</b></p>
-                </div>
-            `;
+// ===================== NAVIGATION =====================
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  el.classList.add('active');
+}
 
-            window.print(); 
-            closeModals();
-            document.getElementById('thank-you-popup').classList.add('show');
-            setTimeout(() => { 
-                document.getElementById('thank-you-popup').classList.remove('show'); 
-                tables[activeTbl] = []; 
-                tableBooked[activeTbl] = false; 
-                goHome(); 
-                saveDataToLocal(true); 
-            }, 2000);
-        }
+// ===================== LANGUAGE =====================
+function setLang(l) {
+  state.lang = l;
+  document.querySelectorAll('.lang-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['th','lo','en'][i] === l);
+  });
+  updateLang();
+  updateDateTime();
+  renderMotivation();
+  renderHistory();
+  renderWorkouts();
+  renderVitamins();
+  loadSettings();
+  saveState();
+}
 
-        function openHistory() {
-            const list = document.getElementById('history-list'); list.innerHTML = '';
-            if(saleHistory.length === 0) list.innerHTML = '<p style="text-align:center; color:#888;">ຍັງບໍ່ມີປະຫວັດການຂາຍ</p>';
-            else saleHistory.forEach(h => {
-                let itemsNames = h.items.map(i => `${i.name} x${i.qty}`).join(', ');
-                list.innerHTML += `<div class="history-item"><div class="history-header"><span>🕒 ${h.time} - ໂຕ໊ະ ${h.table}</span><span class="history-total">${h.total.toLocaleString()} ₭</span></div><div style="font-size:14px; color:#666;">${itemsNames}</div></div>`;
-            });
-            document.getElementById('history-modal').style.display = 'flex';
-        }
+function updateLang() {
+  const t = i18n[state.lang];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (t[key] && typeof t[key] === 'string') el.textContent = t[key];
+  });
+  // Update step goal
+  const sgEl = document.getElementById('step-goal-text');
+  if (sgEl) sgEl.textContent = t.step_goal;
+  // Search placeholder
+  const si = document.getElementById('vit-search-input');
+  if (si) si.placeholder = state.lang === 'en' ? 'Search vitamins...' : state.lang === 'lo' ? 'ຄົ້ນຫາ...' : 'ค้นหาวิตามิน...';
+}
 
-        function clearHistory() { if(confirm("ທ່ານຕ້ອງການລ້າງປະຫວັດການຂາຍທັງໝົດແທ້ຫຼືບໍ່?")) { saleHistory = []; openHistory(); saveDataToLocal(true); } }
+// ===================== UI HELPERS =====================
+function showToast(msg, duration = 2000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
 
-        function saveFood() {
-            const id = document.getElementById('edit-food-id').value;
-            const name = document.getElementById('in-food-name').value;
-            const price = parseInt(document.getElementById('in-food-price').value);
-            const cat = document.getElementById('in-food-category').value;
-            const img = document.getElementById('in-food-img').value;
-            if(name && price) {
-                if (id) { const idx = menuData.findIndex(m => m.id == id); menuData[idx] = { ...menuData[idx], name, price, category: cat, img: img || 'https://via.placeholder.com/150' }; }
-                else { menuData.push({ id: Date.now(), name, price, category: cat, img: img || 'https://via.placeholder.com/150' }); }
-                renderMenu(); closeModals(); saveDataToLocal(true);
-            }
-        }
+function createRipple(e) {
+  if (!e || !e.clientX) return;
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  r.style.cssText = `left:${e.clientX - 30}px;top:${e.clientY - 30}px;width:60px;height:60px`;
+  document.body.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+}
 
-        function toggleTheme() { 
-            const body = document.body; 
-            const isDark = document.getElementById('darkmode-toggle').checked;
-            if (isDark) body.setAttribute('data-theme', 'dark'); 
-            else body.removeAttribute('data-theme');
-            saveDataToLocal(true);
-        }
+// ===================== START =====================
+init();
+</script>
 
-        function goHome() { 
-            document.getElementById('pos-screen').style.display='none'; 
-            document.getElementById('table-screen').style.display='flex'; 
-            init(); 
-        }
-
-        function openSettings() { document.getElementById('settings-modal').style.display='flex'; }
-        function openAddFood() { document.getElementById('food-modal-title').innerText="➕ ເພີ່ມເມນູ"; document.getElementById('edit-food-id').value=""; document.getElementById('food-img-preview').src='https://via.placeholder.com/150'; document.getElementById('food-modal').style.display='flex'; }
-        function openEditFood(e, id) { e.stopPropagation(); const item = menuData.find(m => m.id === id); document.getElementById('edit-food-id').value=id; document.getElementById('in-food-name').value=item.name; document.getElementById('in-food-price').value=item.price; document.getElementById('in-food-category').value=item.category || "ທັງໝົດ"; document.getElementById('food-img-preview').src=item.img; document.getElementById('food-modal').style.display='flex'; }
-        function deleteMenuItem(e, id) { e.stopPropagation(); if(confirm("ລົບເມນູນີ້?")) { menuData = menuData.filter(m => m.id !== id); renderMenu(); saveDataToLocal(true); } }
-        function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display='none'); }
-        function addTable() { tableCount++; init(); saveDataToLocal(true); }
-        function removeTable() { if(tableCount > 1) { tableCount--; init(); saveDataToLocal(true); } }
-
-        window.onload = loadDataFromLocal;
-        window.onresize = init;
-    </script>
 </body>
 </html>
